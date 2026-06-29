@@ -1,0 +1,7 @@
+[theme]
+# --- NMPED Brand Palette (institutional-clarity pass) ---
+primaryColor = "#245d62"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f4f3ef"
+textColor = "#1a1a1a"
+font = "sans serif"
