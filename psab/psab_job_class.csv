@@ -1,0 +1,55 @@
+﻿Code,Name,PSABDescription
+0000,No Job Class,To be used in Object Codes from 11000 through 50999 and from 53000 to 59999. The following codes are to be used exclusively with Object accounts from 51000 through 52999:
+1111,Superintendent,Chief executive officer of the school district.
+1112,Principals,Principal(s) and assistant principal(s). This includes the applicable portion of salaries paid to other instructional personnel with part-time principal duties.
+1113,Administrative Associates,Administrative personnel reporting directly to the superintendent.
+1114,Administrative Assistants,Administrative personnel reporting directly to administrative associates.
+1115,Associate Superintendent for Finance & Business and Business Manager (OBMS shortcut Assoc,"Supt.-Fin./Bus. Mgr.). Administrative personnel whose duties may include directing, managing, and supervising fiscal services, budgeting, payroll, financial accounting, internal auditing, and purchasing for the school district."
+1211,Coordinator/Subject Matter Specialist,Coordinators and employees specializing in direct support of instruction. The Coordinators and Subject Matter Specialists not assigned permanent or part-time classroom teaching schedules are to be included in this expenditure code.
+1212,Library/Media Specialists,"Certified employees with the responsibility for organizing and managing libraries of books and other instructional resource materials, including audio-visual materials and equipment."
+1213,Library/Media Assistants,Full-time or part-time employees assisting in library or media services.
+1214,Guidance Counselors/Social Workers,"Certified professional employees providing guidance and counseling services to students and families. This includes helping pupils and parents assess and understand their abilities, aptitudes, interests and educational needs."
+1215,Registered Nurses,Licensed nurses employed by the school district. This does not include nurses on other professional service contracts
+1216,Health Assistants,Full-time or part-time health assistants.
+1217,Secretarial/Clerical/Technical Assistants,"Secretaries, receptionists, clerks, data entry clerks, system analysts, work-study students, and other related employees."
+1218,School/Student Support,"Attendance workers or other employees who bring home, school, and community together in solving the students problems in order to improve attendance."
+1219,Duty Personnel,"Personnel for lunchroom, hallway, playground, or bus duty."
+1220,Business Office Support,"Business support staff includes employees for fiscal services, budgeting, payroll, financial accounting, internal auditing, and purchasing. This excludes the Associate Superintendent for Finance and Business and Business Manager."
+1311,Diagnosticians,(NOVA Position Code 87).
+1312,Speech Therapists,"(NOVA Position Codes 26, 93)."
+1313,Occupational Therapists,"(NOVA Position Codes 85, 89)."
+1314,Physical/Recreational Therapists,Includes recreational and physical therapists.
+1315,Psychologists/Counselors,Includes all licensed psychologists and other counselors.
+1316,Audiologists,
+1317,Interpreters,
+1318,Specialists,"Includes special education related specialists, orientation and mobility specialists."
+1319,Special Ed Assistants (Non-Instructional),"Contracted personnel who assist special education students. Includes individuals, other than instructional aides, who assist therapists working with special education students or who assist special education students in other ways (e.g. bus assistants)."
+1411,Teachers - Grades 1-12,"Teaching services rendered to students enrolled during the regular school term in grades 1-12. If special program stipends/increments are approved, add to contract salary and treat as any other salary item."
+1412,Teachers - Special Education,Teaching personnel assigned to Special Education programs during the regular school term.
+1413,Teachers - Early Childhood Education,Teaching personnel assigned to Early Childhood Education (kindergarten) programs during the regular school term.
+1414,Teachers - Preschool (excludes Special Education),Teaching personnel assigned to childcare and preschool programs.
+1415,Teachers - Vocational and Technical,Teaching personnel assigned to programs that prepare students to meet challenging academic standards as well as industry skill standards while preparing students for broad-based careers and further education beyond high school. Activities may be delivered through traditional comprehensive and vocational-technical high schools or recognized charter schools. (See description of Program 3000 (Vocational and Technical Programs) above for a description of the types of activities considered vocational/technical).
+1416,Teachers - Other Instruction,"Activities that provide students in pre-kindergarten through K-12 with learning experiences not included in the other object codes. Examples of such programs follow: • Bilingual-English for Speakers of Other Languages (ESOL). Bilingual Multicultural Education (Instruction in English and a second language). Teachers who dedicate most of their instructional time to serve the linguistic and academic needs of culturally different students and other students who may wish to participate in an approved Bilingual program model (Dual Language, Maintenance, Heritage, Transitional and/or Enrichment- NMAC 6.32.2). • Alternative (and At Risk) Education Programs. Activities for students assigned to alternative campuses, centers, or classrooms designed to provide improved behavior modification and/or an enhanced learning experience. Typically, alternative education programs are designed to meet the needs of students that cannot be addressed in a traditional classroom setting."
+1422,Teachers - Special Education- Gifted,Teaching personnel assigned to Gifted Special Education programs during the regular school term.
+1511,Data Processing,"Computer programmers, systems managers, and operators. This does not include data entry personnel which are included in 1217."
+1610,Substitutes Professional Development,Substitute employees assuming the duties of personnel absent due to professional development training regardless of the length of absence.
+1611,Substitutes - Sick Leave,Substitute employees assuming the duties of personnel absent due to sick leave regardless of the length of absence.
+1612,Substitutes - Other Leave,Substitute employees assuming the duties of personnel absent due to other school board approved leave such as personal leave.
+1613,Separation Pay,Payment to employees for their balance of leave in accordance with the local school board policy.
+1614,Maintenance,"Employees who are engaged in the maintenance of and/or repair of school facilities, vehicles, grounds, and equipment."
+1615,Custodial,Employees who are engaged in the housekeeping duties of school facilities and care of grounds.
+1616,Warehouse/Delivery,"Truck drivers, stock clerks, receiving clerks, warehouse and other related personnel."
+1617,Food Service,Food preparers and handlers.
+1618,Athletics Salaries,"Personnel for school directed interscholastic athletic programs such as coaching increments, timekeepers, and any other related employees."
+1619,Adult Education,Salaries associated with adult education programs. Used only in Function 3300.
+1620,Recreation,School district employees in connection with a recreation program. Used only in Function 3300.
+1621,Summer School/After School,"If the school district operates an approved summer/after school program, all expenses for salaries of summer/after school employees shall be charged to this job class Instructional summer/after school compensation and benefits are coded to Function 1000. For after school such as day care should be coded to Function 3300."
+1622,Bus Drivers,School and activity bus drivers.
+1623,Crosswalk/Security Guards,Crosswalk/security guards employed by the entity.
+1624,Activities Salaries,"Student activity functions such as clubs, band, orchestra that are not a part of the regular instructional program."
+1625,Extended Services for Students,Salaries in Function 3300 for extended services for students.
+1711,Instructional Assistants - Grades 1-12,Educational assistants assigned to grades 1 through 12.
+1712,Instructional Assistants - Special Education,Educational assistants assigned to Special Education Programs.
+1713,Instructional Assistants – Early Childhood Education,Educational assistants assigned to Early Childhood Education Programs.
+1714,Instructional Assistants - Preschool,Educational assistants assigned to preschool and child care programs excluding Special Education.
+1800,Board Members,"Travel that does not include an overnight stay must be considered compensation, and coded to object code 51100. Overnight travel for Board Members should be coded to 55811 –Board Travel. [#5](#5) [#5](#5) [#5](#5) [#5](#5) [#6](#6) [#7](#7) [#7](#7) [#7](#7) [#8](#8) [#8](#8) [#9](#9) [#9](#9) [#10](#10) [#12](#12) [#12](#12) [#12](#12) [#12](#12) [#14](#14) [#14](#14) [#16](#16) [#16](#16) [#17](#17) [#17](#17) [#17](#17) [#17](#17) [#18](#18) [#19](#19) [#19](#19) [#20](#20) [#21](#21) [#21](#21) [#22](#22) [#22](#22) [#22](#22) [#22](#22) [#22](#22) [#22](#22) [#23](#23) [#23](#23) [#23](#23) [#24](#24) [#24](#24) [#25](#25) [#25](#25) [#26](#26) [#27](#27) [#28](#28) [#28](#28) [#28](#28) [#28](#28) [#28](#28) [#29](#29) [#29](#29) [#30](#30) [#30](#30) [#30](#30) [#31](#31) [#32](#32) [#32](#32) [#33](#33) [#33](#33) [#33](#33) [#33](#33) [#33](#33) [#34](#34) [#34](#34) [#34](#34) [#35](#35) [#35](#35) [#36](#36) [#36](#36) [#36](#36) [#37](#37) [#37](#37) [#38](#38) [#40](#40) [#42](#42) [#43](#43) [#43](#43) [#45](#45) [#46](#46) [#46](#46) [#47](#47) [#47](#47) [#48](#48) [#50](#50) [#52](#52) [#54](#54) [#55](#55) [#56](#56) [#58](#58) [#59](#59) [#59](#59) [#60](#60) [#60](#60) [#60](#60) [#60](#60) [#60](#60) [#60](#60) [#61](#61) [#61](#61) [#61](#61) [#62](#62) [#62](#62) [#62](#62) [#63](#63) [#63](#63) [#64](#64) [#64](#64) "" }"

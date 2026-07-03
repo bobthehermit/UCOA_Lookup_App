@@ -1,0 +1,38 @@
+﻿Code,Name,PSABDescription
+10000,GENERAL FUNDS,"This fund is the chief operating fund of the school district or charter school. It is used to account for all financial resources of the school district or charter school except for those required to be accounted for in another fund. A District may have only one General Fund, but it may subdivide this fund into sub-funds that roll up to the General Fund. There is generally a limited number of this type of fund. The specific General Funds designated by PED for use by school districts and charter schools are as follows:"
+11000,Operational,
+12000,Teacherage,
+13000,Pupil Transportation,
+14000,Total Instructional Materials Sub-Fund 15100 Impact Aid Operational 15200 Forest Reserve/ Ad Valorem/Oil Gas Tax/Copper,
+20000,SPECIAL REVENUE FUNDS,These funds are used to account for the proceeds of specific revenue sources (other than trusts or major capital projects) that are legally restricted to expenditure for specified purposes. Some examples of special revenue funds are restricted state or federal grants and restricted tax levies. A separate fund may be used for each identified restricted source. There are generally several Funds from different funding sources. The specific Special Revenue Funds designated by PED for use by school districts and charter schools are as follows.
+21000,Food Services,
+22000,Athletics,
+23000,Non-Instructional Support,
+24000,Federal PED Flow-through Grants,
+25000,Federal Direct Grants/ Federal Other State Agencies Flow-Through Grants,
+26000,Local Grants,
+27000,State PED Flow-through Grants,
+28000,State Direct Grants/ State Other State Agencies Flow-Through Grants,
+29000,Combined Local/State Grants,
+30000,CAPITAL PROJECTS FUNDS,These funds are used to account for financial resources for acquisition or construction of major capital facilities (other than those acquired or constructed from Proprietary or Trust funds). The most common source of capital projects funding is the sale of bonds or other capital financing instruments. A separate fund may be used for each capital project or one fund may be used. There is generally a limited number of this type of fund. The specific Capital Project Funds designated by PED for use by school districts and charter schools are as follows:
+31100,GO Bond Building 31120 Teacherage Bond Building,
+31200,Public School Capital Outlay,
+31300,Special Capital Outlay – Local,
+31400,Special Capital Outlay – State,
+31500,Special Capital Outlay – Federal,
+31600,Capital Improvements HB-33,
+31700,Capital Improvements SB-9,
+31701,Capital Improvements SB-9 Local,
+31703,SB-9 State Match Cash,
+31800,Energy Efficiency Act,
+31900,Ed,Technology Equipment Act
+32100,Public School Cap,Outlay – 20%
+40000,DEBT SERVICE FUNDS,"These funds are used to account for the accumulation of resources for, and the payment of, general long-term debt principal and interest. There is generally a limited number of this type of fund. The specific Debt Service Funds designated by PED for use by school districts and charter schools are as follows:"
+41000,GO Debt Services 41200 Teacherage Bond Debt Services 41800 EE Bond Debt Services,
+42000,Deferred Sick Leave,
+43000,ETN Debt Services,
+50000,PERMANENT FUNDS,"These funds are used to account for resources that are legally restricted to the extent that only earnings, and not principal, may be used for purposes that support the school district’s and charter school’s programs. There is generally a limited number of this type of fund. PED has not designated any Permanent Funds for reporting (outside of the Cash Report) by school districts and charter schools at this time. PROPRIETARY FUND TYPES"
+60000,ENTERPRISE FUND,"These funds may be used to account for any activity for which a fee is charged to external users for goods or services. Enterprise funds are required to be used to account for any activity whose principal revenue sources meet any of the following criteria: 1. Debt is backed solely by revenues from fees and charges (does not include debt that is backed by the full faith and credit of the school district or charter school). 2. There is a legal requirement to recover costs through fees and charges. 3. There has been a policy decision by the governing board to recover the costs of providing services through fees or charges. Some examples of enterprise funds are activities such as a supplemental food service program, a bookstore operation, the athletic stadium, parking structure fees, or the community swimming pool. Enterprise activities are generally self-contained and subsist on their own revenues. There is generally a limited number of this type of fund. PED has designated Enterprise Funds for reporting on the Cash Report. The specific Enterprise Funds are NOT designated by PED for use by school districts and charter schools. The budget entities roll-up their specific enterprise funds into the OBMS 60000 fund for reporting and budgeting purposes."
+70000,INTERNAL SERVICE FUNDS,"These funds may be used to account for any activity – within the school district or charter school – that provides goods or services to other funds, departments, component units, or other governments on a cost-reimbursement basis. The use of an internal service fund is appropriate only for activities in which the school district or charter school is the predominant participant in the activity. Otherwise, the activity should be reported as an enterprise fund. Examples of internal service funds are such activities as central warehousing and purchasing, central data processing, and central printing and duplicating. There is generally a limited number of this type of fund. Most school districts and charter schools will not use an Internal Service Fund. PED has not designated any Internal Service Funds for reporting (outside of the Cash Report) by school districts and charter schools at this time. FIDUCIARY FUND TYPES"
+80000,TRUST FUNDS,These funds are used to account for assets held by a school district or charter school in a trustee capacity for others and therefore cannot be used to support the school district’s or charter school’s own programs. Trust funds are generally accounted for on the economic resources measurement focus and the accrual basis of accounting. There is generally a limited number of this type fund. PED has not designated any Trust Funds for reporting (outside of the Cash Report) by school districts and charter schools at this time.
+90000,AGENCY FUNDS,"These funds may be used for assets that are held in a custodial capacity by a school district or charter school for individuals, private organizations, or other governments. Agency funds may include those used to account for student activities or taxes collected for another government. There is generally a limited number of this type of fund. PED has not identified any Agency Funds for reporting (outside of the Cash Report) by school districts and charter schools at this time."
