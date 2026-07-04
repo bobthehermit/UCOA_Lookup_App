@@ -32,7 +32,7 @@ st.set_page_config(
 #   Gold          : #edc872  Coral     : #c64c43  (alerts only)
 st.markdown("""
 <style>
-.block-container { padding-top: 1.1rem !important; max-width: 1180px; }
+.block-container { padding-top: 3rem !important; max-width: 1180px; }
 
 h1, h2, h3, h4 { color: #245d62; font-weight: 600; }
 
@@ -43,7 +43,7 @@ h1, h2, h3, h4 { color: #245d62; font-weight: 600; }
 .ped-title {
     font-family: Georgia, "Times New Roman", serif;
     font-size: 1.6rem; color: #245d62; font-weight: 600;
-    margin: .15rem 0 .6rem; line-height: 1.1;
+    margin: .15rem 0 .6rem; line-height: 1.25;
 }
 .ped-rule { display: flex; height: 3px; margin-bottom: 1.3rem; }
 .ped-rule .g { width: 46px; background: #edc872; }
@@ -316,15 +316,16 @@ def display_fund_detail(row: pd.Series, cfg: dict):
         st.write(f"**PED zero-out:** {_yn(row.get(cfg.get('zeroout_col',''),''))}")
         st.write(f"**Status:** {status or '—'}")
 
-    rev_cy = _clean(row.get(cfg.get("revobj_col", ""), ""))
-    rev_py = _clean(row.get(cfg.get("revobj_py_col", ""), ""))
-    if rev_cy or rev_py:
-        st.markdown('<div class="section-label">Revenue objects</div>', unsafe_allow_html=True)
-        rc1, rc2 = st.columns(2)
-        with rc1:
-            st.write(f"**Current year:** {rev_cy or '—'}")
-        with rc2:
-            st.write(f"**Prior year:** {rev_py or '—'}")
+    # Allowable object/function/program combinations live in OBMS, not in this field.
+    st.markdown(
+        '<div class="section-label">Allowable combinations</div>'
+        f'<div style="font-size:13px;color:#55605c;line-height:1.55;">'
+        f'Valid combinations for this fund are defined in OBMS. '
+        f'<a href="https://obms.ped.state.nm.us/PED_OBMS/Reports" target="_blank">'
+        f'Open the Chart Line Listing Report&nbsp;→</a> — select the current Chart of '
+        f'Accounts, then set Start&nbsp;Fund and End&nbsp;Fund to {code}.</div>',
+        unsafe_allow_html=True,
+    )
 
 
 def display_generic_detail(row: pd.Series, dim: str, cfg: dict):
