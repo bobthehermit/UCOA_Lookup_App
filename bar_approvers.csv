@@ -1,0 +1,36 @@
+Code,FundDescription,PMApproval,FinalApproval
+11000,Operational,N/A,School Budget
+12000,Teacherage,N/A,School Budget
+13000,Transportation,Transportation,Fiscal
+14000,Instructional Materials,Instructional Materials,Fiscal
+15100,Impact Aid Operational,N/A,School Budget
+15200,Local Revenue Operational,N/A,School Budget
+21000,Food Service,Student Success,Fiscal
+21100,Universal Free Lunch (State Funded),Student Success,Fiscal
+22000,Athletics,N/A,School Budget
+23000,Activity,N/A,School Budget
+24000,Federal Flow-Through,Multiple,Fiscal
+25000,Federal Direct Grants,N/A,School Budget
+26000,Local Grants,N/A,School Budget
+27000,State Flow-Through Grants,Multiple,Fiscal
+28000,State Direct Grants,N/A,School Budget
+29000,Combined Local/State Grants,N/A,School Budget
+31100,Bond Building,N/A,School Budget
+31120,Teacherage Bond Building,N/A,School Budget
+31200,Public School Capital Outlay,Capital Outlay,Fiscal
+31300,Special Capital Outlay - Local,N/A,School Budget
+31400,Special Capital Outlay - State,Capital Outlay,Fiscal
+31500,Special Capital Outlay - Federal,N/A,School Budget
+31600,Capital Improvements - HB33,N/A,School Budget
+31700,Capital Improvement SB9,Capital Outlay,Fiscal
+31701,Capital Improvement SB9 - Local,Capital Outlay,Fiscal
+31703,SB-9 State Match,Capital Outlay,Fiscal
+31800,Energy Efficiency Act,N/A,School Budget
+31900,Educational Technology,N/A,School Budget
+32100,Public School Capital Outlay - 20%,N/A,School Budget
+41000,Debt Service,N/A,School Budget
+41200,Teacherage Bond Debt Services,N/A,School Budget
+41800,EE Bond Debt Services,N/A,School Budget
+42000,Deferred Sick Leave,N/A,School Budget
+43000,Ed-Tech Debt Service,N/A,School Budget
+60000,Enterprise Fund,N/A,School Budget

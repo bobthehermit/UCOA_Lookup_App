@@ -209,6 +209,93 @@ def _type_pill(t: str) -> str:
 def _status_pill(status: str) -> str:
     return '<span class="pill pill-hist">Historical</span>' if _clean(status) == "Historical" else ""
 
+def _fund_category(code: str, parent_cat_name: str = "") -> str:
+    """PSAB/GAAP fund category. Prefer ParentCategoryName from the PSAB layer;
+    otherwise derive from the code family. This is the *accounting* category —
+    distinct from the OBMS 'FundType' system attribute, which classifies funds
+    for OBMS processing (e.g. 31100 shows 'General Fund' in OBMS because it
+    rolls up under parent fund 30000)."""
+    if parent_cat_name:
+        return parent_cat_name
+    c = _clean(code)
+    if not c or not c[0].isdigit():
+        return ""
+    if c.startswith(("31", "32")):
+        return "Capital Projects Funds"
+    first = c[0]
+    return {
+        "1": "General / Operational Funds",
+        "2": "Special Revenue Funds",
+        "3": "Capital Projects Funds",
+        "4": "Debt Service Funds",
+        "5": "Permanent Funds",
+        "6": "Enterprise / Proprietary Funds",
+        "7": "Trust & Agency Funds",
+    }.get(first, "")
+
+# ─── BAR routing (BAR/Budget Approvers by Fund, PED sheet upd. 3/28/23) ─
+# Loaded from data/bar_approvers.csv; embedded fallback keeps the app
+# working if the CSV is missing. Rollup families (24000, 25000, 26000,
+# 27000, 28000, 29000, …) apply to their child funds: 24106 → 24000.
+_BAR_FALLBACK = {
+    "11000": ("Operational", "N/A", "School Budget"),
+    "13000": ("Transportation", "Transportation", "Fiscal"),
+    "14000": ("Instructional Materials", "Instructional Materials", "Fiscal"),
+    "21000": ("Food Service", "Student Success", "Fiscal"),
+    "24000": ("Federal Flow-Through", "Multiple", "Fiscal"),
+    "25000": ("Federal Direct Grants", "N/A", "School Budget"),
+    "26000": ("Local Grants", "N/A", "School Budget"),
+    "27000": ("State Flow-Through Grants", "Multiple", "Fiscal"),
+    "28000": ("State Direct Grants", "N/A", "School Budget"),
+    "29000": ("Combined Local/State Grants", "N/A", "School Budget"),
+    "31100": ("Bond Building", "N/A", "School Budget"),
+    "41000": ("Debt Service", "N/A", "School Budget"),
+}
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def _load_bar_approvers() -> dict[str, tuple[str, str, str]]:
+    path = DATA_DIR / "bar_approvers.csv"
+    try:
+        df = pd.read_csv(path, dtype=str, keep_default_na=False)
+        return {
+            _clean(r["Code"]): (_clean(r["FundDescription"]),
+                                _clean(r["PMApproval"]),
+                                _clean(r["FinalApproval"]))
+            for _, r in df.iterrows() if _clean(r.get("Code", ""))
+        }
+    except Exception:
+        return dict(_BAR_FALLBACK)
+
+def _bar_lookup(code: str) -> tuple[tuple[str, str, str] | None, str]:
+    """Exact match first, then rollup fallback (24106 → 24100 → 24000).
+    Returns ((desc, pm, final), matched_code) or (None, '')."""
+    table = _load_bar_approvers()
+    c = _clean(code)
+    if not c:
+        return None, ""
+    candidates = [c]
+    if len(c) == 5:
+        candidates += [c[:3] + "00", c[:2] + "000"]
+    for cand in candidates:
+        if cand in table:
+            return table[cand], cand
+    return None, ""
+
+# Known rollup category heads (not directly budgeted; children carry budgets).
+# Per SBB practice: 24/25/26/27/28/29-thousand heads are rollups; the rest of
+# the BAR sheet codes are specific funds.
+KNOWN_ROLLUPS = {"24000", "25000", "26000", "27000", "28000", "29000"}
+
+def _rollup_codes(df: pd.DataFrame, parent_col: str) -> set[str]:
+    """Rollup = a code some other fund points to as its parent, plus the
+    known grant-family heads."""
+    out = set(KNOWN_ROLLUPS)
+    if df.empty or parent_col not in df.columns or "Code" not in df.columns:
+        return out
+    parents = {_clean(v) for v in df[parent_col] if _clean(v)}
+    codes = {_clean(c) for c in df["Code"]}
+    return out | (parents & codes)
+
 def _metric_card(label: str, value, alert: bool = False) -> str:
     if alert:
         border = "border:0.5px solid #ecc9c1;border-left:3px solid #c64c43;"
@@ -275,33 +362,46 @@ def _description_block(row: pd.Series):
         )
 
 
-def display_fund_detail(row: pd.Series, cfg: dict):
+def display_fund_detail(row: pd.Series, cfg: dict, rollups: set[str] | None = None):
     code       = _clean(row.get("Code", ""))
     name       = _clean(row.get("Name", ""))
-    fund_type  = _clean(row.get(cfg.get("type_col", ""), ""))
+    obms_type  = _clean(row.get(cfg.get("type_col", ""), ""))
     parent     = _clean(row.get(cfg.get("parent_col", ""), ""))
     is_grant   = _bool_col(row.get(cfg.get("grant_col", ""), ""))
     grant_name = _clean(row.get(cfg.get("grantname_col", ""), ""))
     status     = _clean(row.get("Status", ""))
+    category   = _fund_category(code, _clean(row.get("ParentCategoryName", "")))
+    is_rollup  = code in (rollups or set())
 
-    grant_pill = ' <span class="pill pill-grant">Grant</span>' if is_grant else ""
-    gap_pill   = ' <span class="pill pill-gap">⚠ Grant name missing</span>' if (is_grant and _is_gap(grant_name)) else ""
+    grant_pill  = ' <span class="pill pill-grant">Grant</span>' if is_grant else ""
+    gap_pill    = ' <span class="pill pill-gap">⚠ Grant name missing</span>' if (is_grant and _is_gap(grant_name)) else ""
+    cat_pill    = f' <span class="pill pill-flow">{category}</span>' if category else ""
+    rollup_pill = ' <span class="pill pill-gen">Rollup category</span>' if is_rollup else ""
 
     st.markdown(
         f'<div style="font-size:1.2rem;font-weight:600;color:#222;">{name}</div>'
         f'<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0 4px;">'
         f'<span class="badge badge-mono">{code}</span>'
-        f'{_type_pill(fund_type)}{grant_pill}{_status_pill(status)}{gap_pill}'
+        f'{cat_pill}{rollup_pill}{grant_pill}{_status_pill(status)}{gap_pill}'
         f'</div>',
         unsafe_allow_html=True,
     )
+
+    if is_rollup:
+        st.markdown(
+            '<div style="font-size:12px;color:#55605c;margin:2px 0 6px;">'
+            'This is a rollup category, not a directly budgeted fund — '
+            'budgets live on its specific child funds.</div>',
+            unsafe_allow_html=True,
+        )
 
     _description_block(row)
 
     st.markdown('<div class="section-label">Fund attributes</div>', unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
     with c1:
-        st.write(f"**Fund type:** {fund_type or '—'}")
+        st.write(f"**Fund category:** {category or '—'}")
+        st.write(f"**OBMS fund type:** {obms_type or '—'}")
         st.write(f"**Parent fund:** {parent or '—'}")
         st.write(f"**Is grant:** {_yn(row.get(cfg.get('grant_col',''),''))}")
         st.write(f"**Grant name:** {grant_name if not _is_gap(grant_name) else '⚠ Missing'}")
@@ -315,6 +415,38 @@ def display_fund_detail(row: pd.Series, cfg: dict):
         st.write(f"**Uses dependent charter xfer:** {_yn(row.get(cfg.get('chartxfer_col',''),''))}")
         st.write(f"**PED zero-out:** {_yn(row.get(cfg.get('zeroout_col',''),''))}")
         st.write(f"**Status:** {status or '—'}")
+    st.caption(
+        "Fund category is the PSAB/GAAP classification. OBMS fund type is a "
+        "system attribute from the COA Configuration Report and may differ "
+        "(e.g. capital funds under parent 30000 show as “General Fund” in OBMS)."
+    )
+
+    # ── BAR routing ───────────────────────────────────────────────────
+    bar, matched = _bar_lookup(code)
+    st.markdown('<div class="section-label">BAR routing</div>', unsafe_allow_html=True)
+    if bar:
+        desc, pm, final = bar
+        inherited = matched != code
+        via = (
+            f' <span style="font-size:12px;color:#8a8a82;">— inherited from '
+            f'rollup <span style="font-family:monospace;">{matched}</span> ({desc})</span>'
+            if inherited else ""
+        )
+        st.markdown(
+            f'<div style="font-size:14px;color:#3a3a38;line-height:1.7;">'
+            f'<b>PM approval:</b> {pm} &nbsp;·&nbsp; '
+            f'<b>Final approval:</b> {final}{via}</div>'
+            f'<div style="font-size:12px;color:#8a8a82;margin-top:4px;">'
+            f'Source: BAR/Budget Approvers by Fund (upd. 3/28/23). For PM contacts, '
+            f'run OBMS → Reports → Personnel Reports → <i>Users in Roles by Fund</i>.</div>',
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(
+            '<div style="font-size:13px;color:#8a8a82;">No BAR routing entry '
+            'found for this fund or its rollup family.</div>',
+            unsafe_allow_html=True,
+        )
 
     # Allowable object/function/program combinations live in OBMS, not in this field.
     st.markdown(
@@ -440,7 +572,70 @@ if st.sidebar.button("Reset filters"):
     st.rerun()
 
 # ── Search ────────────────────────────────────────────────────────────
-search = st.text_input("Search", placeholder="Code, name, description, grant name…")
+s1, s2 = st.columns([3, 1])
+with s1:
+    search = st.text_input("Search", placeholder="Code, name, description, grant name…")
+with s2:
+    st.markdown("<div style='height:1.75rem'></div>", unsafe_allow_html=True)
+    search_all = st.checkbox("All dimensions", value=True,
+                             help="Search every UCOA dimension at once, regardless of the selected tab.")
+
+FUND_ROLLUPS = _rollup_codes(all_data.get("Fund", pd.DataFrame()),
+                             DIM_CONFIG["Fund"].get("parent_col", ""))
+
+def _search_mask(df: pd.DataFrame, q: str) -> pd.Series:
+    mask = pd.Series(False, index=df.index)
+    for c in df.select_dtypes(include="object").columns:
+        mask |= df[c].astype(str).str.lower().str.contains(q, na=False)
+    return mask
+
+# ═════════════════════════════════════════════════════════════════════
+# GLOBAL SEARCH MODE — query spans every dimension
+# ═════════════════════════════════════════════════════════════════════
+
+if search and search_all:
+    q = search.lower()
+    st.caption("Searching all dimensions — sidebar filters apply to browse mode only.")
+    grand_total = 0
+    GLOBAL_CAP = 10  # expanders shown per dimension
+
+    for dim in DIM_FILES:
+        df = all_data.get(dim, pd.DataFrame())
+        if df.empty:
+            continue
+        hits = df[_search_mask(df, q)]
+        if hits.empty:
+            continue
+        grand_total += len(hits)
+        dcfg = DIM_CONFIG.get(dim, {})
+        st.markdown(f"#### {dim} ({len(hits)})")
+        for _, row in hits.head(GLOBAL_CAP).iterrows():
+            code   = _clean(row.get("Code", ""))
+            name   = _clean(row.get("Name", ""))
+            status = _clean(row.get("Status", ""))
+            tags = []
+            if dim == "Fund":
+                cat = _fund_category(code, _clean(row.get("ParentCategoryName", "")))
+                if cat:
+                    tags.append(cat)
+                if code in FUND_ROLLUPS:
+                    tags.append("rollup")
+            elif dcfg.get("type_col") and _clean(row.get(dcfg["type_col"], "")):
+                tags.append(_clean(row.get(dcfg["type_col"], "")))
+            if status == "Historical":
+                tags.append("historical")
+            suffix = (" · " + " · ".join(tags)) if tags else ""
+            with st.expander(f"**{code}** — {name}{suffix}", expanded=(len(hits) == 1 and grand_total == 1)):
+                if dim == "Fund":
+                    display_fund_detail(row, dcfg, FUND_ROLLUPS)
+                else:
+                    display_generic_detail(row, dim, dcfg)
+        if len(hits) > GLOBAL_CAP:
+            st.caption(f"Showing first {GLOBAL_CAP} of {len(hits)} — refine your search to narrow results.")
+
+    if grand_total == 0:
+        st.info("No codes match your search in any dimension.")
+    st.stop()
 
 # ── Apply filters ─────────────────────────────────────────────────────
 view = df_active.copy()
@@ -466,11 +661,7 @@ if active_dim == "Fund":
         view = view[view[cfg["budget_col"]].str.lower().isin({"yes", "true", "1", "y"})]
 
 if search:
-    q = search.lower()
-    mask = pd.Series(False, index=view.index)
-    for c in view.select_dtypes(include="object").columns:
-        mask |= view[c].astype(str).str.lower().str.contains(q, na=False)
-    view = view[mask]
+    view = view[_search_mask(view, search.lower())]
 
 # ── Metrics ───────────────────────────────────────────────────────────
 total_in_dim = len(df_active)
@@ -524,7 +715,13 @@ else:
         grant_name = _clean(row.get(cfg.get("grantname_col", ""), "")) if active_dim == "Fund" else ""
 
         tags = []
-        if type_val:
+        if active_dim == "Fund":
+            cat = _fund_category(code, _clean(row.get("ParentCategoryName", "")))
+            if cat:
+                tags.append(cat)
+            if code in FUND_ROLLUPS:
+                tags.append("rollup")
+        elif type_val:
             tags.append(type_val)
         if is_grant:
             tags.append("Grant")
@@ -539,7 +736,7 @@ else:
 
         with st.expander(label, expanded=False):
             if active_dim == "Fund":
-                display_fund_detail(row, cfg)
+                display_fund_detail(row, cfg, FUND_ROLLUPS)
             else:
                 display_generic_detail(row, active_dim, cfg)
 
