@@ -501,6 +501,31 @@ st.markdown(
     '<div class="ped-rule"><span class="g"></span><span class="t"></span></div>',
     unsafe_allow_html=True,
 )
+st.caption(
+    "A quick-lookup tool for UCOA codes and their descriptions. It's a convenience, not the "
+    "official source: **PSAB Supplement 3 (Accounting/Fund Accounting/General Ledger) is the "
+    "authoritative guidance** — when in doubt, check the "
+    "[PSAB manual](https://web.ped.nm.gov/bureaus/school-budget-bureau/manual-of-procedures-psab/). "
+    "See *About & official sources* in the sidebar for how to confirm allowed chart lines in OBMS."
+)
+
+# ── Sidebar: about / official sources ────────────────────────────────
+with st.sidebar.expander("About & official sources", expanded=False):
+    st.markdown(
+        "**What this is.** A searchable reference for UCOA fund, function, object, program "
+        "and job class codes. Code attributes come from the OBMS *COA Configuration Report*; "
+        "descriptions are extracted from PSAB Supplement 3.\n\n"
+        "**The official guidance** on how these codes are used is "
+        "[PSAB Supplement 3 — Manual of Procedures](https://web.ped.nm.gov/bureaus/school-budget-bureau/manual-of-procedures-psab/). "
+        "Descriptions here are pulled from that manual automatically and may lag behind or "
+        "contain extraction errors. If this tool and the manual disagree, the manual wins.\n\n"
+        "**Valid code ≠ allowed chart line.** The UCOA defines the possible codes; it doesn't "
+        "say which fund/function/object/program combinations are allowed. To check allowed "
+        "lines, log in to [OBMS](https://obms.ped.state.nm.us/PED_OBMS/Login) → **Reports** → *Administrative Reports* → "
+        "**Chart Line Listing Report**. The **COA Configuration Report** in the same menu "
+        "shows each code's OBMS settings.\n\n"
+        "Questions or a description that looks wrong? Contact the School Budget Bureau."
+    )
 
 # ── Sidebar: data ─────────────────────────────────────────────────────
 st.sidebar.header("Data")
@@ -574,7 +599,7 @@ if st.sidebar.button("Reset filters"):
 # ── Search ────────────────────────────────────────────────────────────
 s1, s2 = st.columns([3, 1])
 with s1:
-    search = st.text_input("Search", placeholder="Code, name, description, grant name…")
+    search = st.text_input("Search", placeholder="Code, name, description, grant name…").strip()
 with s2:
     st.markdown("<div style='height:1.75rem'></div>", unsafe_allow_html=True)
     search_all = st.checkbox("All dimensions", value=True,
@@ -583,18 +608,57 @@ with s2:
 FUND_ROLLUPS = _rollup_codes(all_data.get("Fund", pd.DataFrame()),
                              DIM_CONFIG["Fund"].get("parent_col", ""))
 
+# Search looks at the text a person would recognize — code, name, description, grant name,
+# parent codes — not the Yes/No attribute columns (otherwise "no" or "fy27" matches everything).
+SEARCH_COLS = ["Code", "Name", "PSABDescription", "GrantName", "ParentCategoryName",
+               "ParentCategoryDescription", "ParentFundCode", "ParentObjectCode"]
+
+# Fold look-alike characters so "SB-9" finds "SB–9" and curly quotes match straight ones.
+_FOLD = str.maketrans({"–": "-", "—": "-", "‐": "-", "‘": "'", "’": "'", "“": '"', "”": '"'})
+
+def _norm(s: pd.Series | str):
+    if isinstance(s, str):
+        return " ".join(s.translate(_FOLD).lower().split())
+    return s.astype(str).str.translate(_FOLD).str.lower()
+
 def _search_mask(df: pd.DataFrame, q: str) -> pd.Series:
-    mask = pd.Series(False, index=df.index)
-    for c in df.select_dtypes(include="object").columns:
-        mask |= df[c].astype(str).str.lower().str.contains(q, na=False)
+    """Every word in the query must appear somewhere in the row (any order, any column).
+    'loss investment' finds 'Loss on Investments'. Literal match — no regex, so $ ( ) ? are safe."""
+    terms = _norm(q).split()
+    cols = [c for c in SEARCH_COLS if c in df.columns]
+    if not terms or not cols or df.empty:
+        return pd.Series(True, index=df.index)
+    hay = _norm(df[cols].astype(str).agg(" ".join, axis=1))
+    mask = pd.Series(True, index=df.index)
+    for t in terms:
+        mask &= hay.str.contains(t, regex=False)
     return mask
+
+def _rank_hits(hits: pd.DataFrame, q: str) -> pd.DataFrame:
+    """Best matches first: exact code, code prefix, phrase in name, all words in name, rest.
+    Matters because global search shows only the first few hits per dimension."""
+    if hits.empty:
+        return hits
+    qn = _norm(q)
+    code = hits["Code"].astype(str).str.lower()
+    name = _norm(hits["Name"]) if "Name" in hits.columns else pd.Series("", index=hits.index)
+    in_name = pd.Series(True, index=hits.index)
+    for t in qn.split():
+        in_name &= name.str.contains(t, regex=False)
+    rank = pd.Series(4, index=hits.index)
+    rank = rank.mask(in_name, 3)
+    rank = rank.mask(name.str.contains(qn, regex=False), 2)
+    rank = rank.mask(code.str.startswith(qn), 1)
+    rank = rank.mask(code == qn, 0)
+    order = rank.sort_values(kind="stable").index
+    return hits.loc[order]
 
 # ═════════════════════════════════════════════════════════════════════
 # GLOBAL SEARCH MODE — query spans every dimension
 # ═════════════════════════════════════════════════════════════════════
 
 if search and search_all:
-    q = search.lower()
+    q = search
     st.caption("Searching all dimensions — sidebar filters apply to browse mode only.")
     grand_total = 0
     GLOBAL_CAP = 10  # expanders shown per dimension
@@ -603,7 +667,7 @@ if search and search_all:
         df = all_data.get(dim, pd.DataFrame())
         if df.empty:
             continue
-        hits = df[_search_mask(df, q)]
+        hits = _rank_hits(df[_search_mask(df, q)], q)
         if hits.empty:
             continue
         grand_total += len(hits)
@@ -661,7 +725,7 @@ if active_dim == "Fund":
         view = view[view[cfg["budget_col"]].str.lower().isin({"yes", "true", "1", "y"})]
 
 if search:
-    view = view[_search_mask(view, search.lower())]
+    view = _rank_hits(view[_search_mask(view, search)], search)
 
 # ── Metrics ───────────────────────────────────────────────────────────
 total_in_dim = len(df_active)
@@ -790,3 +854,7 @@ with dl2:
 
 st.markdown("---")
 st.caption("New Mexico Public Education Department · School Budget Bureau · reads ./data built by build_ucoa.py")
+st.caption(
+    "Reference only. Official UCOA guidance: [PSAB Supplement 3](https://web.ped.nm.gov/bureaus/school-budget-bureau/manual-of-procedures-psab/). "
+    "Allowed chart lines: OBMS → Reports → Administrative Reports → Chart Line Listing Report."
+)
