@@ -73,9 +73,13 @@ rules:
     when: { object: "56116" }
     then: { function: ["3100"] }
     basis: PSAB Supp. 3, object 56116
-    alternative: Event refreshments → 56118, if the program manager confirms food is allowable under the grant
-    example: Family night refreshments
-    status: proposed
+    alternative: >-
+      Food goes to 3100.56116 — don't move it to 56118 General Supplies to reach another
+      function. Food that is part of a professional development activity can be paid
+      under 53330 with the PD (53330 covers PD-related expenses, including travel).
+    example: Family night refreshments → 3100.56116
+    note: Lorenzo, 10/21/26 BHI review and 11/12/26. Whether the grant allows food is the program manager's call.
+    status: settled
 
   # ── Job class ────────────────────────────────────────────────────────────
   - id: R004
@@ -241,4 +245,24 @@ rules:
     basis: PSAB Supp. 3, functions 3300 and 2100
     ask: Are these services open to the wider community, not only to students and staff? (Whether the grant allows that is the program manager's call.)
     note: From the 10/21/26 BHI review and 10/29/26 call.
+    status: settled
+
+  - id: R023
+    title: 56118 General Supplies is not for food — food goes to 3100.56116
+    kind: guidance
+    when: { object: "56118" }
+    basis: PSAB Supp. 3, objects 56116 and 56118
+    alternative: Food → 3100.56116. Food bought as part of a professional development activity → 53330 with the PD.
+    ask: Will any of these supplies be food or refreshments?
+    note: Lorenzo, 11/12/26.
+    status: settled
+
+  - id: R024
+    title: 58215 Restricted Expenditures is opened only for a multi-year award that is not appropriated by fiscal year
+    kind: guidance
+    when: { object: "58215" }
+    basis: SBB practice — the program manager supplies the award facts; the School Budget Bureau decides
+    alternative: If the award is appropriated by fiscal year, each year's budget stands on its own and 58215 is not opened
+    ask: Is this a multi-year award, and is it appropriated by fiscal year or as one amount for the whole award period? Attach the award.
+    note: Lorenzo, 11/12/26 (Taos request on 27579).
     status: settled

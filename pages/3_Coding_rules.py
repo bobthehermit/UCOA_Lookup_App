@@ -25,8 +25,8 @@ st.caption(
 )
 
 
-@st.cache_data(ttl=3600, show_spinner=False)
 def load():
+    # Not cached: the file is small, and reading it fresh shows edits immediately.
     return re_.active_rules(re_.load_rules(ROOT / "config" / "rules.yaml"))
 
 

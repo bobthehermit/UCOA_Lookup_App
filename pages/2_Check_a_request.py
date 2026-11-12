@@ -50,12 +50,13 @@ def load():
         d = pd.read_csv(DATA / fname, dtype=str, keep_default_na=False, encoding="utf-8-sig")
         look[dim] = d.drop_duplicates("Code").set_index("Code")
     lines = pd.read_parquet(DATA / "chart_lines.parquet").astype(str)
-    rules = re_.load_rules(ROOT / "config" / "rules.yaml")
     workflow = pd.read_csv(ROOT / "config" / "workflow.csv", dtype=str, keep_default_na=False).set_index("fund")
-    return look, lines, rules, workflow
+    return look, lines, workflow
 
 
-look, all_lines, rules, workflow = load()
+look, all_lines, workflow = load()
+# Not cached: rules.yaml is small, and reading it fresh means an edit shows up on the next rerun.
+rules = re_.load_rules(ROOT / "config" / "rules.yaml")
 
 # ─── Fund ─────────────────────────────────────────────────────────────
 funds = look["fund"]
