@@ -1,0 +1,244 @@
+# config/rules.yaml — SBB chart line coding rules, as data.
+#
+# Read by rules_engine.py. Used by the "Check new lines" page, the "Coding rules"
+# page and audit_rules.py. Edit here, commit, push — no code changes needed.
+#
+# ── How to write a rule ────────────────────────────────────────────────────
+#   id          Stable ID. Never reuse or renumber.
+#   title       One plain sentence. Shown to the public.
+#   kind        forbid    – a line matching `when` is not allowed
+#               require   – a line matching `when` must also match `then`
+#               guidance  – advice shown when a line matches `when`; never blocks
+#               breadth   – warns when one request opens many job classes on a line
+#   when/then   Conditions on: fund, function, object, program, job_class
+#                 "1000"            exactly this code
+#                 "51*"             starts with 51
+#                 "!0000"           anything except 0000
+#                 ["2200","2300"]   any of these
+#                 ["!11000","!15100"]  none of these
+#               ALWAYS put codes in quotes, or YAML turns 0000 into the number 0.
+#   basis       The PSAB citation. Shown to the public.
+#   alternative What to use instead. Shown to the public.
+#   example     A real case. Shown to the public.
+#   ask         (guidance only) A question the requester must answer. A line that
+#               matches shows as "Needs an answer" instead of "No issues found".
+#   note        Internal note (who settled it, when). NOT shown in the app.
+#   status      settled  → error      proposed → warning      retired → ignored
+#               (guidance is always shown as advice; breadth is always a warning)
+#
+# Rules apply to NEW line requests. Lines already open in OBMS are grandfathered:
+# audit_rules.py lists them for awareness, not for removal.
+
+version: 2
+rules:
+
+  # ── Professional development (53330) ─────────────────────────────────────
+  - id: R013
+    title: 53330 Professional Development is used only with functions 2200, 2300, 2400, 2500, 2600, 2700, 3100 and 3300
+    kind: require
+    when: { object: "53330" }
+    then: { function: ["2200", "2300", "2400", "2500", "2600", "2700", "3100", "3300"] }
+    basis: PSAB Supp. 3, object 53330
+    alternative: >-
+      Pick the function by which staff are trained: instructional 2200, general
+      administration 2300, school administration 2400, other administrative 2500,
+      maintenance 2600, transportation 2700, food service 3100, community service 3300.
+    example: Crisis-prevention training for teachers, including travel → 2200.53330
+    note: Replaces R001 (not with 1000) and R014 (not with 2100); both follow from the PSAB function list.
+    status: settled
+
+  # ── Other object / function pairings ─────────────────────────────────────
+  - id: R002
+    title: 55819 is used only with function 1000
+    kind: require
+    when: { object: "55819" }
+    then: { function: ["1000"] }
+    basis: PSAB Supp. 3, object 55819
+    note: From process draft step 4. Confirm wording against PSAB.
+    status: settled
+
+  - id: R016
+    title: 53215 (licensed counselor services) is used only with functions 2100 and 3300
+    kind: require
+    when: { object: "53215" }
+    then: { function: ["2100", "3300"] }
+    basis: PSAB Supp. 3, object definitions
+    alternative: Non-licensed provider → 55915 · individual honorarium → 53711 · REC or government → 55913 / 55914
+    note: Applied on the 10/29/26 BHI call.
+    status: settled
+
+  - id: R020
+    title: 56116 Food is used only with function 3100
+    kind: require
+    when: { object: "56116" }
+    then: { function: ["3100"] }
+    basis: PSAB Supp. 3, object 56116
+    alternative: Event refreshments → 56118, if the program manager confirms food is allowable under the grant
+    example: Family night refreshments
+    status: proposed
+
+  # ── Job class ────────────────────────────────────────────────────────────
+  - id: R004
+    title: A job class is used only with salary and benefit objects (51xxx, 52xxx)
+    kind: require
+    when: { job_class: "!0000" }
+    then: { object: ["51*", "52*"] }
+    basis: PSAB Supp. 3, job class 0000
+    status: settled
+
+  - id: R005
+    title: Salary objects (51xxx) need a job class
+    kind: forbid
+    when: { object: "51*", job_class: "0000" }
+    basis: PSAB Supp. 3, job class section; OBMS "Requires Job Class" setting
+    alternative: Add the job class of the staff being paid. Job class is optional on 52xxx benefit lines.
+    status: settled
+
+  - id: R012
+    title: Open lines narrowly — every line on a fund is open to every entity using that fund
+    kind: breadth
+    when: { object: "51*" }
+    then: { max_job_classes: 2 }
+    basis: SBB practice
+    example: Opened only job class 1610 (substitutes) in function 1000, not every teacher job class
+    note: Lorenzo, 10/7/26. Threshold of 2 is a starting point — tune after some real requests.
+    status: settled
+
+  # ── Programs — which functions each program may be used with ─────────────
+  # Taken from the PSAB program descriptions. PROPOSED until Lorenzo confirms:
+  # the existing chart is much looser than PSAB here (e.g. program 1010 is open
+  # in function 2200 on 357 funds). These replace the draft rule
+  # "functions 2200–2600 use program 0000".
+  - id: R040
+    title: Programs 1010, 1020, 3000 and 4010 are used only with function 1000 (Instruction)
+    kind: require
+    when: { program: ["1010", "1020", "3000", "4010"] }
+    then: { function: ["1000"] }
+    basis: PSAB Supp. 3, program descriptions ("Only used in Function 1000")
+    alternative: Use program 0000 (No Program) outside function 1000
+    status: proposed
+
+  - id: R041
+    title: Program 2000 (Special Programs) is generally used only with functions 1000 and 2100
+    kind: require
+    when: { program: "2000" }
+    then: { function: ["1000", "2100"] }
+    basis: PSAB Supp. 3, program 2000
+    alternative: Use program 0000 outside functions 1000 and 2100
+    status: proposed
+
+  - id: R042
+    title: Program 4020 (At-Risk) outside funds 11000, 15100 and 15200 is used only with function 1000
+    kind: require
+    when: { program: "4020", fund: ["!11000", "!15100", "!15200"] }
+    then: { function: ["1000"] }
+    basis: PSAB Supp. 3, program 4020
+    status: proposed
+
+  - id: R043
+    title: Program 4020 (At-Risk) in funds 11000, 15100 and 15200 is used with functions 1000, 2200–2700 and 2900
+    kind: require
+    when: { program: "4020", fund: ["11000", "15100", "15200"] }
+    then: { function: ["1000", "2200", "2300", "2400", "2500", "2600", "2700", "2900"] }
+    basis: PSAB Supp. 3, program 4020
+    status: proposed
+
+  - id: R044
+    title: Program 4060 (English Learners) outside funds 11000, 15100 and 15200 is used only with function 1000
+    kind: require
+    when: { program: "4060", fund: ["!11000", "!15100", "!15200"] }
+    then: { function: ["1000"] }
+    basis: PSAB Supp. 3, program 4060
+    status: proposed
+
+  - id: R045
+    title: Program 4060 (English Learners) in funds 11000, 15100 and 15200 is used with functions 1000, 2100, 2200, 2300 and 2400
+    kind: require
+    when: { program: "4060", fund: ["11000", "15100", "15200"] }
+    then: { function: ["1000", "2100", "2200", "2300", "2400"] }
+    basis: PSAB Supp. 3, program 4060
+    status: proposed
+
+  # ── Guidance (shown as advice; never blocks) ─────────────────────────────
+  - id: R010
+    title: Code a stipend to the work it pays for, not to the employee's regular position
+    kind: guidance
+    when: { object: "51300" }
+    basis: SBB practice — overstating function 1000 distorts federal reporting
+    example: A teacher's stipend for coordinating student behavioral-health services → 2100.51300, job class 1211
+    ask: What work does this additional compensation pay for, and for which staff role?
+    note: Sara, 9/24/26
+    status: settled
+
+  - id: R011
+    title: Function 1000 is only for direct instruction of students during regular class time
+    kind: guidance
+    when: { function: "1000" }
+    basis: PSAB Supp. 3, function 1000
+    example: Substitutes covering teachers who are in training → 1000.51100.1010.1610 plus benefits
+    alternative: Staff training, coordination and planning are support services (2100, 2200), even when the employee is a teacher
+    ask: Does this pay for direct instruction of students during regular class time? Describe the specific duties or what is being bought.
+    note: Sara, 9/24/26
+    status: settled
+
+  - id: R015
+    title: For contracted services, the function follows who receives the service
+    kind: guidance
+    when: { object: ["53*", "55915"] }
+    basis: PSAB Supp. 3, function definitions
+    example: Staff training → 2200.53330 · services to students → 2100 · community outreach event → 3300
+    note: Applied on the 10/29/26 BHI call.
+    status: settled
+
+  - id: R017
+    title: 53414 is only for the professional services PSAB lists (medical, legal, architects, financial advisory, consultants)
+    kind: guidance
+    when: { object: "53414" }
+    basis: PSAB Supp. 3, object 53414
+    example: Not used for a guest presenter at an awareness event
+    ask: Which of the PSAB-listed professional services is this, and who provides it?
+    status: settled
+
+  - id: R018
+    title: Staff wellness from a non-licensed provider — individual services → 2500.55915; a structured program staff attend → 2200.53330
+    kind: guidance
+    when: { object: "55915", function: ["2200", "2500"] }
+    basis: PSAB Supp. 3, function 2500 (employee health services)
+    status: settled
+
+  - id: R019
+    title: Software and app subscriptions go to 56113, not 54320
+    kind: guidance
+    when: { object: "54320" }
+    basis: PSAB Supp. 3, objects 56113 and 54320
+    alternative: "56113"
+    example: Counseling app subscriptions
+    status: proposed
+
+  - id: R030
+    title: 55912, 55913 and 55914 are only for payments to another district, charter, REC or government agency
+    kind: guidance
+    when: { object: ["55912", "55913", "55914"] }
+    basis: PSAB Supp. 3, object definitions; these are reported separately as intergovernmental payments
+    ask: Is the provider another district, a charter school, an REC or a government agency? Name it.
+    status: settled
+
+  - id: R021
+    title: 55915 Other Contract Services is a catch-all — if the purpose is professional development, use 53330
+    kind: guidance
+    when: { object: "55915" }
+    basis: PSAB Supp. 3, object 55915
+    alternative: Staff training or professional development → 53330 with the function for the staff trained
+    example: Crisis-prevention training bought from a vendor → 2200.53330, not 55915
+    ask: What is the service, and who receives it — staff, students, or families and the community?
+    note: From the 10/21/26 BHI review.
+    status: settled
+
+  - id: R022
+    title: Function 3300 is for services open to the wider community; services for students belong in 2100
+    kind: guidance
+    when: { function: "3300" }
+    basis: PSAB Supp. 3, functions 3300 and 2100
+    ask: Are these services open to the wider community, not only to students and staff? (Whether the grant allows that is the program manager's call.)
+    note: From the 10/21/26 BHI review and 10/29/26 call.
+    status: settled

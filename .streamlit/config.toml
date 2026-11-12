@@ -5,3 +5,7 @@ backgroundColor = "#ffffff"
 secondaryBackgroundColor = "#f4f3ef"
 textColor = "#1a1a1a"
 font = "sans serif"
+
+[client]
+# We draw our own page menu in ui_common.py, so hide the automatic one.
+showSidebarNavigation = false

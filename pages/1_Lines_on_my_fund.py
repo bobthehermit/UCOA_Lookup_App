@@ -20,20 +20,21 @@ Data it reads (all built by the two build scripts — never hand-edited)
     data/ucoa_<dim>.csv          names + PSAB descriptions      (build_ucoa.py)
 """
 
+import sys
 from datetime import datetime
 from pathlib import Path
+
+ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(ROOT))          # lets this page import modules from the project folder
 
 import pandas as pd
 import streamlit as st
 
-st.set_page_config(page_title="Lines on my fund · UCOA", layout="wide")
+from ui_common import setup_page
 
-st.markdown("""
-<style>
-.block-container { padding-top: 3rem !important; max-width: 1180px; }
-[data-testid="stExpander"] { border: 0.5px solid #ececec; border-radius: 8px; }
-</style>
-""", unsafe_allow_html=True)
+# setup_page does the things every page shares: tab title, brand CSS, logo,
+# the page menu and the heading. See ui_common.py.
+setup_page("Lines open on a fund")
 
 # __file__ is this file; .parent is pages/; .parent.parent is the project folder.
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -88,7 +89,6 @@ def psab_of(dim: str, code: str) -> str:
 
 
 # ─── Header ───────────────────────────────────────────────────────────
-st.title("Lines open on a fund")
 st.caption(
     f"Chart lines currently open in OBMS, as of the {built} export. "
     "PSAB Supplement 3 is the authoritative guidance on what each code means."

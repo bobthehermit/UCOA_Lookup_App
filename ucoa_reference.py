@@ -125,6 +125,11 @@ if logo:
     st.sidebar.markdown(logo, unsafe_allow_html=True)
 st.sidebar.caption("School Budget Bureau")
 
+# Page menu (shared with the other pages — see ui_common.py). The automatic
+# Streamlit menu is switched off in .streamlit/config.toml.
+from ui_common import sidebar_nav, page_cards
+sidebar_nav()
+
 # ═════════════════════════════════════════════════════════════════════
 # CONFIGURATION
 # ═════════════════════════════════════════════════════════════════════
@@ -506,8 +511,9 @@ st.caption(
     "official source: **PSAB Supplement 3 (Accounting/Fund Accounting/General Ledger) is the "
     "authoritative guidance** — when in doubt, check the "
     "[PSAB manual](https://web.ped.nm.gov/bureaus/school-budget-bureau/manual-of-procedures-psab/). "
-    "See *About & official sources* in the sidebar for how to confirm allowed chart lines in OBMS."
+    "A valid code is not the same as an allowed chart line — use the tools below for that."
 )
+page_cards(skip="ucoa_reference.py")
 
 # ── Sidebar: about / official sources ────────────────────────────────
 with st.sidebar.expander("About & official sources", expanded=False):
@@ -521,7 +527,9 @@ with st.sidebar.expander("About & official sources", expanded=False):
         "contain extraction errors. If this tool and the manual disagree, the manual wins.\n\n"
         "**Valid code ≠ allowed chart line.** The UCOA defines the possible codes; it doesn't "
         "say which fund/function/object/program combinations are allowed. To check allowed "
-        "lines, log in to [OBMS](https://obms.ped.state.nm.us/PED_OBMS/Login) → **Reports** → *Administrative Reports* → "
+        "lines, use **Lines on a fund** in the menu above, built from the OBMS *Chart Line "
+        "Listing Report*. For the most current list, log in to "
+        "[OBMS](https://obms.ped.state.nm.us/PED_OBMS/Login) → **Reports** → *Administrative Reports* → "
         "**Chart Line Listing Report**. The **COA Configuration Report** in the same menu "
         "shows each code's OBMS settings.\n\n"
         "Questions or a description that looks wrong? Contact the School Budget Bureau."
