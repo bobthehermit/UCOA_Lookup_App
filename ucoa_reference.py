@@ -676,7 +676,7 @@ avail_choice = st.sidebar.radio(
     "Where it can be used", AVAIL_OPTIONS,
     help="In OBMS: codes OBMS carries for budgets and actuals. Books only: codes in PSAB "
          "Supplement 3 that OBMS does not carry (optional sub-functions, most balance sheet "
-         "objects). This filter also applies to search.",
+         "objects).",
 )
 
 def _avail_filter(df: pd.DataFrame) -> pd.DataFrame:
@@ -716,7 +716,8 @@ with s1:
 with s2:
     st.markdown("<div style='height:1.75rem'></div>", unsafe_allow_html=True)
     search_all = st.checkbox("All dimensions", value=True,
-                             help="Search every UCOA dimension at once, regardless of the selected tab.")
+                             help="Search and filter every UCOA dimension at once. Untick to work "
+                                  "in the one dimension selected in the sidebar.")
 
 FUND_ROLLUPS = _rollup_codes(all_data.get("Fund", pd.DataFrame()),
                              DIM_CONFIG["Fund"].get("parent_col", ""))
@@ -770,18 +771,38 @@ def _rank_hits(hits: pd.DataFrame, q: str) -> pd.DataFrame:
 # GLOBAL SEARCH MODE — query spans every dimension
 # ═════════════════════════════════════════════════════════════════════
 
-if search and search_all:
+def _shared_filters(df: pd.DataFrame) -> pd.DataFrame:
+    """The sidebar filters that mean the same thing in every dimension."""
+    df = _avail_filter(df)
+    if show_nces_only and "PSABNCES" in df.columns:
+        df = df[df["PSABNCES"].str.lower() == "yes"]
+    if show_active_only and "Status" in df.columns:
+        df = df[df["Status"] != "Historical"]
+    if show_described_only and "PSABDescription" in df.columns:
+        df = df[df["PSABDescription"].str.len() > 0]
+    if show_undescribed_only and "PSABDescription" in df.columns:
+        df = df[df["PSABDescription"].str.len() == 0]
+    return df
+
+# With "All dimensions" ticked, a search OR one of the shared filters shows results from
+# every dimension. With nothing typed and nothing filtered there would be ~1,300 codes to
+# list, so the page falls through to browsing the dimension picked in the sidebar.
+shared_filter_on = (avail_choice != "All codes" or show_nces_only or show_active_only
+                    or show_described_only or show_undescribed_only)
+
+if search_all and (search or shared_filter_on):
     q = search
-    st.caption("Searching all dimensions. Only the *Where it can be used* filter applies here; "
-               "the other sidebar filters apply to browse mode.")
+    what = "Searching" if q else "Showing"
+    st.caption(f"{what} all dimensions. The Type and fund-only filters apply when "
+               "*All dimensions* is unticked.")
     grand_total = 0
     GLOBAL_CAP = 10  # expanders shown per dimension
 
     for dim in DIM_FILES:
-        df = _avail_filter(all_data.get(dim, pd.DataFrame()))
+        df = _shared_filters(all_data.get(dim, pd.DataFrame()))
         if df.empty:
             continue
-        hits = _rank_hits(df[_search_mask(df, q)], q)
+        hits = _rank_hits(df[_search_mask(df, q)], q) if q else df
         if hits.empty:
             continue
         grand_total += len(hits)
@@ -807,29 +828,18 @@ if search and search_all:
             with st.expander(f"**{code}** — {name}{suffix}", expanded=(len(hits) == 1 and grand_total == 1)):
                 show_detail(row, dim, dcfg)
         if len(hits) > GLOBAL_CAP:
-            st.caption(f"Showing first {GLOBAL_CAP} of {len(hits)} — refine your search to narrow results.")
+            st.caption(f"Showing first {GLOBAL_CAP} of {len(hits)}. Type a search to narrow it, or "
+                       f"untick *All dimensions* and pick {dim} in the sidebar to page through all of them.")
 
     if grand_total == 0:
-        st.info("No codes match your search in any dimension.")
+        st.info("No codes match in any dimension.")
     st.stop()
 
 # ── Apply filters ─────────────────────────────────────────────────────
-view = _avail_filter(df_active.copy())
-
-if show_nces_only and "PSABNCES" in view.columns:
-    view = view[view["PSABNCES"].str.lower() == "yes"]
+view = _shared_filters(df_active.copy())
 
 if sel_types and type_col in view.columns:
     view = view[view[type_col].isin(sel_types)]
-
-if show_active_only and "Status" in view.columns:
-    view = view[view["Status"] != "Historical"]
-
-if show_described_only and "PSABDescription" in view.columns:
-    view = view[view["PSABDescription"].str.len() > 0]
-
-if show_undescribed_only and "PSABDescription" in view.columns:
-    view = view[view["PSABDescription"].str.len() == 0]
 
 if active_dim == "Fund":
     if show_grants_only and cfg["grant_col"] in view.columns:
