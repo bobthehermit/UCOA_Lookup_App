@@ -613,7 +613,7 @@ def render(e: Entry) -> tuple[str, str]:
             if kind == "num":
                 out.append("<ol>")
             elif kind == "roman":
-                out.append('<ol type="i">')
+                out.append('<ol type="i" class="psab-roman">')
             else:
                 out.append('<ul class="psab-codes">' if kind == "code" else "<ul>")
             stack.append(kind)

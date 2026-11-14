@@ -1,4 +1,4 @@
-# PSAB extraction coverage — 2026-11-14 09:24
+# PSAB extraction coverage — 2026-11-14 09:34
 
 Source: `Supplement-3-April-2026.pdf` · 2,595 text lines · **0 lines without a role** (must be 0)
 

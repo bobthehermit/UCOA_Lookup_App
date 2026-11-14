@@ -60,7 +60,9 @@ rules = re_.load_rules(ROOT / "config" / "rules.yaml")
 
 # ─── Fund ─────────────────────────────────────────────────────────────
 funds = look["fund"]
-fund_codes = sorted(c for c in funds.index if funds.at[c, "Status"] != "Historical")
+fund_codes = sorted(c for c in funds.index
+                    if funds.at[c, "Status"] != "Historical"
+                    and funds.at[c, "Availability"] != "Books only")     # OBMS funds only
 fund = st.selectbox(
     "Fund",
     fund_codes,
@@ -77,7 +79,7 @@ if not (fund.isdigit() and len(fund) == 5):
     st.error("A fund number is five digits, e.g. 27579.")
     st.stop()
 
-is_new_fund = fund not in funds.index
+is_new_fund = fund not in funds.index or funds.at[fund, "Availability"] == "Books only"
 fund_lines = all_lines[all_lines.fund == fund]
 
 route = re_.approval_route(fund, workflow, funds)

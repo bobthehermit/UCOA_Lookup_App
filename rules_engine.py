@@ -160,7 +160,7 @@ def check_lines(df: pd.DataFrame, rules: list[dict]) -> pd.DataFrame:
 def builtin_checks(df: pd.DataFrame, look: dict[str, pd.DataFrame], open_lines: pd.DataFrame | None) -> pd.DataFrame:
     """
     Checks that come from OBMS settings rather than rules.yaml:
-      - every code exists and is active and postable (not a roll-up)
+      - every code exists in OBMS (not a books-only code) and is active and postable
       - the line is already open on the fund (→ no request needed)
       - the function/object pair is brand new statewide (→ federal crosswalk check)
 
@@ -182,7 +182,14 @@ def builtin_checks(df: pd.DataFrame, look: dict[str, pd.DataFrame], open_lines: 
                 add(idx, "B001", "error", f"{label} {code} is not a code in this year's chart of accounts")
                 continue
             rec = t.loc[code]
-            if rec.get("Status", "") == "Historical" or rec.get("NotInUse", "") == "Yes":
+            if rec.get("Availability", "OBMS") == "Books only":
+                # In PSAB Supplement 3 but not in OBMS: optional sub-functions, most
+                # balance sheet objects. They can never be opened as an OBMS chart line.
+                parent = rec.get("PSABParent", "")
+                add(idx, "B004", "error",
+                    f"{label} {code} ({rec['Name']}) is a books-only code — OBMS does not carry it",
+                    f"Use {parent}, which it rolls up to" if parent else "")
+            elif rec.get("Status", "") == "Historical" or rec.get("NotInUse", "") == "Yes":
                 add(idx, "B002", "error", f"{label} {code} ({rec['Name']}) is no longer in use")
             elif rec.get("ActualsPostable", "Yes") != "Yes":
                 add(idx, "B003", "error",

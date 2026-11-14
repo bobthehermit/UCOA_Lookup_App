@@ -80,6 +80,19 @@ h1, h2, h3, h4 { color: #245d62; font-weight: 600; }
     margin-top: 4px;
 }
 .desc-box.fallback { border-left-color: #cdd7d3; color: #55605c; font-style: italic; }
+/* formatted PSAB text: paragraphs, numbered lists, roman-numeral sub-lists, footnotes */
+.desc-box p { margin: 0 0 .65em; }
+.desc-box p:last-child { margin-bottom: 0; }
+.desc-box ol, .desc-box ul { margin: .25em 0 .65em 0; padding-left: 1.9em; }
+.desc-box li { margin-bottom: .3em; font-size: 13px; }
+.desc-box ol.psab-roman { list-style-type: lower-roman; margin-top: .35em; }
+.desc-box ul.psab-codes { list-style: none; padding-left: .4em; }
+.desc-box .psab-footnote { font-size: 12px; color: #6b6b66; border-top: 1px solid #e3e3dd;
+                           padding-top: .5em; margin-top: .8em; }
+.psab-page { font-weight: 400; letter-spacing: 0; text-transform: none; color: #7a8a86; }
+.pill-nces  { color: #0c447c; background: #e6f1fb; }
+.pill-books { color: #633806; background: #faeeda; }
+.books-note { font-size: 12.5px; color: #55605c; margin: 2px 0 6px; line-height: 1.5; }
 
 a { color: #245d62; text-decoration: none; }
 a:hover { color: #1a474b; text-decoration: underline; }
@@ -346,9 +359,12 @@ def _load_all_dims() -> tuple[dict[str, pd.DataFrame], str, list[str]]:
 def _description_block(row: pd.Series):
     """PSAB description if present; for Fund fall back to the parent-category description."""
     psab = _clean(row.get("PSABDescription", ""))
-    if psab:
-        st.markdown('<div class="section-label">PSAB description</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="desc-box">{psab}</div>', unsafe_allow_html=True)
+    rich = _clean(row.get("PSABHtml", ""))       # same text with the manual's lists and bold
+    page = _clean(row.get("PSABPage", ""))
+    if psab or rich:
+        where = f' <span class="psab-page">· Supplement 3, page {page}</span>' if page else ""
+        st.markdown(f'<div class="section-label">PSAB description{where}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="desc-box">{rich or psab}</div>', unsafe_allow_html=True)
         return
     parent_desc = _clean(row.get("ParentCategoryDescription", ""))
     parent_name = _clean(row.get("ParentCategoryName", ""))
@@ -365,6 +381,65 @@ def _description_block(row: pd.Series):
             '<div class="desc-box fallback">No PSAB description available for this code.</div>',
             unsafe_allow_html=True,
         )
+
+
+def _is_books_only(row: pd.Series) -> bool:
+    return _clean(row.get("Availability", "")) == "Books only"
+
+
+def _psab_pills(row: pd.Series) -> str:
+    """Pills that come from the manual: NCES reporting, and codes OBMS does not carry."""
+    out = ""
+    if _bool_col(row.get("PSABNCES", "")):
+        out += '<span class="pill pill-nces">NCES reporting</span>'
+    if _is_books_only(row):
+        kind = "Optional code" if _bool_col(row.get("Optional", "")) else "Books only"
+        out += f'<span class="pill pill-books">{kind} · not in OBMS</span>'
+    return out
+
+
+def _extra_tags(row: pd.Series) -> list[str]:
+    """Short tags for the collapsed row label."""
+    tags = []
+    if _is_books_only(row):
+        parent = _clean(row.get("PSABParent", ""))
+        if _bool_col(row.get("Optional", "")) and parent:
+            tags.append(f"optional → {parent}")
+        else:
+            tags.append("books only")
+    if _bool_col(row.get("PSABNCES", "")):
+        tags.append("NCES")
+    return tags
+
+
+def _books_note(row: pd.Series, dim: str) -> str:
+    """One sentence explaining a code that is in the manual but not in OBMS."""
+    if not _is_books_only(row):
+        return ""
+    parent = _clean(row.get("PSABParent", ""))
+    if _bool_col(row.get("Optional", "")) and parent:
+        pname = ""
+        ddf = all_data.get(dim, pd.DataFrame())
+        hit = ddf[ddf["Code"] == parent] if not ddf.empty else ddf
+        if len(hit):
+            pname = f" — {_clean(hit.iloc[0]['Name'])}"
+        text = (f"Optional code from PSAB Supplement 3. A district may use it in its own books to "
+                f"track more detail. OBMS does not carry it: budgets and actuals are reported on "
+                f"<b>{parent}{pname}</b>, which it rolls up to.")
+    elif dim == "Object":
+        text = ("Balance sheet code from PSAB Supplement 3, for use in a district's own books. "
+                "OBMS does not carry it.")
+    else:
+        text = "Described in PSAB Supplement 3. OBMS does not carry this code."
+    return f'<div class="books-note">{text}</div>'
+
+
+def show_detail(row: pd.Series, dim: str, cfg: dict):
+    """Funds that exist in OBMS get the fund card; everything else the generic card."""
+    if dim == "Fund" and not _is_books_only(row):
+        display_fund_detail(row, cfg, FUND_ROLLUPS)
+    else:
+        display_generic_detail(row, dim, cfg)
 
 
 def display_fund_detail(row: pd.Series, cfg: dict, rollups: set[str] | None = None):
@@ -387,7 +462,7 @@ def display_fund_detail(row: pd.Series, cfg: dict, rollups: set[str] | None = No
         f'<div style="font-size:1.2rem;font-weight:600;color:#222;">{name}</div>'
         f'<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0 4px;">'
         f'<span class="badge badge-mono">{code}</span>'
-        f'{cat_pill}{rollup_pill}{grant_pill}{_status_pill(status)}{gap_pill}'
+        f'{cat_pill}{rollup_pill}{grant_pill}{_status_pill(status)}{gap_pill}{_psab_pills(row)}'
         f'</div>',
         unsafe_allow_html=True,
     )
@@ -474,19 +549,26 @@ def display_generic_detail(row: pd.Series, dim: str, cfg: dict):
 
     st.markdown(
         f'<div style="font-size:1.2rem;font-weight:600;color:#222;">{name}</div>'
-        f'<div style="display:flex;gap:8px;align-items:center;margin:8px 0;">'
+        f'<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0;">'
         f'<span class="badge badge-mono">{code}</span>'
-        f'{_type_pill(type_val)}{_status_pill(status)}'
-        f'</div>',
+        f'{_type_pill(type_val)}{_status_pill(status)}{_psab_pills(row)}'
+        f'</div>'
+        f'{_books_note(row, dim)}',
         unsafe_allow_html=True,
     )
 
     _description_block(row)
 
     st.markdown('<div class="section-label">Attributes</div>', unsafe_allow_html=True)
+    # Columns shown elsewhere on the card (or internal) stay out of the attribute list.
     hide = {"Code", "Name", "PSABDescription", "ParentCategoryDescription",
-            "ParentCategoryName", "Status"}
+            "ParentCategoryName", "Status", "PSABHtml", "PSABPage", "PSABNCES", "Optional",
+            "PSABParent", "PSABSection", "Availability"}
     fields = [(col, _clean(row[col])) for col in row.index if col not in hide and _clean(row[col])]
+    section = _clean(row.get("PSABSection", ""))
+    if section:
+        fields.insert(0, ("PSAB section", section))
+    fields.insert(0, ("Available in", "District books only" if _is_books_only(row) else "OBMS"))
     if not fields:
         st.write("No additional detail available.")
         return
@@ -511,7 +593,8 @@ st.caption(
     "official source: **PSAB Supplement 3 (Accounting/Fund Accounting/General Ledger) is the "
     "authoritative guidance** — when in doubt, check the "
     "[PSAB manual](https://web.ped.nm.gov/bureaus/school-budget-bureau/manual-of-procedures-psab/). "
-    "A valid code is not the same as an allowed chart line — use the tools below for that."
+    "A valid code is not the same as an allowed chart line — use the tools below for that. "
+    "Codes marked *books only* are in the manual for a district's own records; OBMS does not carry them."
 )
 page_cards(skip="ucoa_reference.py")
 
@@ -532,6 +615,11 @@ with st.sidebar.expander("About & official sources", expanded=False):
         "[OBMS](https://obms.ped.state.nm.us/PED_OBMS/Login) → **Reports** → *Administrative Reports* → "
         "**Chart Line Listing Report**. The **COA Configuration Report** in the same menu "
         "shows each code's OBMS settings.\n\n"
+        "**OBMS codes and books-only codes.** Most codes here are in OBMS. Some are in PSAB "
+        "Supplement 3 but not in OBMS: the optional sub-functions (for example 2220, which rolls "
+        "up to 2200) and most balance sheet objects. A district can use those in its own books; "
+        "budgets and actuals reported in OBMS use the OBMS codes. Use the *Where it can be used* "
+        "filter to see one group or the other.\n\n"
         "Questions or a description that looks wrong? Contact the School Budget Bureau."
     )
 
@@ -582,6 +670,23 @@ if type_col and type_col in df_active.columns:
     if all_types:
         sel_types = st.sidebar.multiselect("Type", all_types, default=all_types)
 
+# Where the code can be used: in OBMS, or only in a district's own books.
+AVAIL_OPTIONS = ["All codes", "In OBMS", "Books only"]
+avail_choice = st.sidebar.radio(
+    "Where it can be used", AVAIL_OPTIONS,
+    help="In OBMS: codes OBMS carries for budgets and actuals. Books only: codes in PSAB "
+         "Supplement 3 that OBMS does not carry (optional sub-functions, most balance sheet "
+         "objects). This filter also applies to search.",
+)
+
+def _avail_filter(df: pd.DataFrame) -> pd.DataFrame:
+    if avail_choice == "All codes" or "Availability" not in df.columns:
+        return df
+    want = "OBMS" if avail_choice == "In OBMS" else "Books only"
+    return df[df["Availability"] == want]
+
+show_nces_only = st.sidebar.checkbox("Required for NCES reporting")
+
 # Universal status filter (every dimension carries Status now)
 show_active_only = False
 if "Status" in df_active.columns:
@@ -619,7 +724,7 @@ FUND_ROLLUPS = _rollup_codes(all_data.get("Fund", pd.DataFrame()),
 # Search looks at the text a person would recognize — code, name, description, grant name,
 # parent codes — not the Yes/No attribute columns (otherwise "no" or "fy27" matches everything).
 SEARCH_COLS = ["Code", "Name", "PSABDescription", "GrantName", "ParentCategoryName",
-               "ParentCategoryDescription", "ParentFundCode", "ParentObjectCode"]
+               "ParentCategoryDescription", "ParentFundCode", "ParentObjectCode", "PSABSection"]
 
 # Fold look-alike characters so "SB-9" finds "SB–9" and curly quotes match straight ones.
 _FOLD = str.maketrans({"–": "-", "—": "-", "‐": "-", "‘": "'", "’": "'", "“": '"', "”": '"'})
@@ -667,12 +772,13 @@ def _rank_hits(hits: pd.DataFrame, q: str) -> pd.DataFrame:
 
 if search and search_all:
     q = search
-    st.caption("Searching all dimensions — sidebar filters apply to browse mode only.")
+    st.caption("Searching all dimensions. Only the *Where it can be used* filter applies here; "
+               "the other sidebar filters apply to browse mode.")
     grand_total = 0
     GLOBAL_CAP = 10  # expanders shown per dimension
 
     for dim in DIM_FILES:
-        df = all_data.get(dim, pd.DataFrame())
+        df = _avail_filter(all_data.get(dim, pd.DataFrame()))
         if df.empty:
             continue
         hits = _rank_hits(df[_search_mask(df, q)], q)
@@ -696,12 +802,10 @@ if search and search_all:
                 tags.append(_clean(row.get(dcfg["type_col"], "")))
             if status == "Historical":
                 tags.append("historical")
+            tags += _extra_tags(row)
             suffix = (" · " + " · ".join(tags)) if tags else ""
             with st.expander(f"**{code}** — {name}{suffix}", expanded=(len(hits) == 1 and grand_total == 1)):
-                if dim == "Fund":
-                    display_fund_detail(row, dcfg, FUND_ROLLUPS)
-                else:
-                    display_generic_detail(row, dim, dcfg)
+                show_detail(row, dim, dcfg)
         if len(hits) > GLOBAL_CAP:
             st.caption(f"Showing first {GLOBAL_CAP} of {len(hits)} — refine your search to narrow results.")
 
@@ -710,7 +814,10 @@ if search and search_all:
     st.stop()
 
 # ── Apply filters ─────────────────────────────────────────────────────
-view = df_active.copy()
+view = _avail_filter(df_active.copy())
+
+if show_nces_only and "PSABNCES" in view.columns:
+    view = view[view["PSABNCES"].str.lower() == "yes"]
 
 if sel_types and type_col in view.columns:
     view = view[view[type_col].isin(sel_types)]
@@ -751,8 +858,9 @@ if active_dim == "Fund":
     m3.markdown(_metric_card("Grant funds", grants_n), unsafe_allow_html=True)
     m4.markdown(_metric_card("Historical", historical_n), unsafe_allow_html=True)
 else:
-    m3.markdown(_metric_card("PSAB described", described_n), unsafe_allow_html=True)
-    m4.markdown(_metric_card("Historical", historical_n), unsafe_allow_html=True)
+    books_n = int((df_active["Availability"] == "Books only").sum()) if "Availability" in df_active.columns else 0
+    m3.markdown(_metric_card("In OBMS", total_in_dim - books_n), unsafe_allow_html=True)
+    m4.markdown(_metric_card("Books only", books_n), unsafe_allow_html=True)
 
 st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
 
@@ -801,16 +909,14 @@ else:
             tags.append("⚠ no grant name")
         if status == "Historical":
             tags.append("historical")
+        tags += _extra_tags(row)
         if not has_desc:
             tags.append("no PSAB desc")
         suffix = (" · " + " · ".join(tags)) if tags else ""
         label = f"**{code}** — {name}{suffix}"
 
         with st.expander(label, expanded=False):
-            if active_dim == "Fund":
-                display_fund_detail(row, cfg, FUND_ROLLUPS)
-            else:
-                display_generic_detail(row, active_dim, cfg)
+            show_detail(row, active_dim, cfg)
 
     pcol1, pcol2, pcol3, pcol4, pcol5 = st.columns([1, 1, 2, 1, 1])
     with pcol1:
@@ -836,21 +942,25 @@ else:
 # DATA TABLE & DOWNLOADS
 # ═════════════════════════════════════════════════════════════════════
 
+def _for_export(df: pd.DataFrame) -> pd.DataFrame:
+    """The HTML column is for display on the cards; spreadsheets get the plain text."""
+    return df.drop(columns=[c for c in ("PSABHtml",) if c in df.columns])
+
 with st.expander("Data table", expanded=False):
-    st.dataframe(view, width="stretch", height=400)
+    st.dataframe(_for_export(view), width="stretch", height=400)
 
 st.subheader("Downloads")
 dl1, dl2 = st.columns(2)
 with dl1:
     st.download_button(
         f"Filtered ({active_dim})",
-        view.to_csv(index=False).encode("utf-8-sig"),
+        _for_export(view).to_csv(index=False).encode("utf-8-sig"),
         f"ucoa_{active_dim.lower().replace(' ', '_')}_filtered.csv",
         "text/csv",
     )
 with dl2:
     combined = pd.concat(
-        [df.assign(Dimension=dim) for dim, df in all_data.items() if not df.empty],
+        [_for_export(df).assign(Dimension=dim) for dim, df in all_data.items() if not df.empty],
         ignore_index=True,
     )
     st.download_button(
