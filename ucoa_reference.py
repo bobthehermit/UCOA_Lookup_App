@@ -383,6 +383,48 @@ def _description_block(row: pd.Series):
         )
 
 
+# ─── Where is a code open? (data/chart_lines.parquet) ─────────────────
+LINES_PAGE = "pages/1_Lines_on_my_fund.py"
+LINE_DIM = {"Function": "function", "Object": "object", "Program": "program", "Job Class": "job_class"}
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def _open_counts() -> tuple[dict[str, dict[str, int]], int]:
+    """For every dimension: {code: number of funds it is open on}. Plus the fund total."""
+    try:
+        lines = pd.read_parquet(DATA_DIR / "chart_lines.parquet")
+    except Exception:
+        return {}, 0
+    out = {d: lines.groupby(d, observed=True)["fund"].nunique().to_dict()
+           for d in ("function", "object", "program", "job_class")}
+    out["fund"] = lines.groupby("fund", observed=True).size().to_dict()
+    return out, int(lines["fund"].nunique())
+
+
+def _open_lines_block(code: str, dim: str):
+    """'Open on 63 of 468 funds' with a link to the Open chart lines page."""
+    counts, total = _open_counts()
+    if not counts:
+        return
+    st.markdown('<div class="section-label">Open chart lines</div>', unsafe_allow_html=True)
+    if dim == "Fund":
+        n = counts["fund"].get(code, 0)
+        if not n:
+            st.caption("No chart lines are open on this fund.")
+            return
+        st.caption(f"{n:,} chart lines are open on this fund.")
+        st.page_link(LINES_PAGE, label=f"See the lines open on {code}", icon=":material/list_alt:",
+                     query_params={"view": "fund", "fund": code})
+        return
+    d = LINE_DIM[dim]
+    n = counts[d].get(code, 0)
+    if not n:
+        st.caption("Not open on any fund: no chart line uses this code.")
+        return
+    st.caption(f"Open on {n} of {total} funds.")
+    st.page_link(LINES_PAGE, label=f"See the funds {code} is open on", icon=":material/list_alt:",
+                 query_params={"view": "code", "dim": d, "code": code})
+
+
 def _is_books_only(row: pd.Series) -> bool:
     return _clean(row.get("Availability", "")) == "Books only"
 
@@ -528,14 +570,13 @@ def display_fund_detail(row: pd.Series, cfg: dict, rollups: set[str] | None = No
             unsafe_allow_html=True,
         )
 
-    # Allowable object/function/program combinations live in OBMS, not in this field.
+    # Which lines are open on this fund: from the Chart Line Listing build.
+    _open_lines_block(code, "Fund")
     st.markdown(
-        '<div class="section-label">Allowable combinations</div>'
-        f'<div style="font-size:13px;color:#55605c;line-height:1.55;">'
-        f'Valid combinations for this fund are defined in OBMS. '
+        f'<div style="font-size:12px;color:#8a8a82;line-height:1.55;">'
+        f'For the most current list, run the '
         f'<a href="https://obms.ped.state.nm.us/PED_OBMS/Reports" target="_blank">'
-        f'Open the Chart Line Listing Report&nbsp;→</a> — select the current Chart of '
-        f'Accounts, then set Start&nbsp;Fund and End&nbsp;Fund to {code}.</div>',
+        f'Chart Line Listing Report</a> in OBMS with Start&nbsp;Fund and End&nbsp;Fund set to {code}.</div>',
         unsafe_allow_html=True,
     )
 
@@ -558,6 +599,9 @@ def display_generic_detail(row: pd.Series, dim: str, cfg: dict):
     )
 
     _description_block(row)
+
+    if dim in LINE_DIM and not _is_books_only(row):
+        _open_lines_block(code, dim)
 
     st.markdown('<div class="section-label">Attributes</div>', unsafe_allow_html=True)
     # Columns shown elsewhere on the card (or internal) stay out of the attribute list.
@@ -610,7 +654,7 @@ with st.sidebar.expander("About & official sources", expanded=False):
         "contain extraction errors. If this tool and the manual disagree, the manual wins.\n\n"
         "**Valid code ≠ allowed chart line.** The UCOA defines the possible codes; it doesn't "
         "say which fund/function/object/program combinations are allowed. To check allowed "
-        "lines, use **Lines on a fund** in the menu above, built from the OBMS *Chart Line "
+        "lines, use **Open chart lines** in the menu above, built from the OBMS *Chart Line "
         "Listing Report*. For the most current list, log in to "
         "[OBMS](https://obms.ped.state.nm.us/PED_OBMS/Login) → **Reports** → *Administrative Reports* → "
         "**Chart Line Listing Report**. The **COA Configuration Report** in the same menu "

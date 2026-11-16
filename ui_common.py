@@ -32,8 +32,8 @@ LOGO_LINK = "https://web.ped.nm.gov/bureaus/school-budget-bureau/"
 PAGES = [
     ("ucoa_reference.py",            "Code lookup",       ":material/search:",
      "What a fund, function, object, program or job class code means."),
-    ("pages/1_Lines_on_my_fund.py",  "Lines on a fund",   ":material/list_alt:",
-     "Which chart lines are already open on a fund."),
+    ("pages/1_Lines_on_my_fund.py",  "Open chart lines",  ":material/list_alt:",
+     "Which lines are open on a fund, and which funds a code is open on."),
     ("pages/2_Check_a_request.py",   "Check new lines",   ":material/fact_check:",
      "Test lines you plan to request against PSAB and SBB coding rules."),
     ("pages/3_Coding_rules.py",      "Coding rules",      ":material/gavel:",

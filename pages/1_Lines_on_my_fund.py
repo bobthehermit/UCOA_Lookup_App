@@ -1,17 +1,24 @@
 """
-pages/1_Lines_on_my_fund.py — "Which chart lines are open on this fund?"
+pages/1_Lines_on_my_fund.py — open chart lines, read two ways.
 
-Phase 1 of the Chart Line Guide (chart_line_guide_spec.md §3.2, step 1).
+    By fund   pick a fund  -> every function / object / program / job class line open on it
+    By code   pick a code  -> every fund that code is open on, and what it is paired with
+
+Both views read the same table (data/chart_lines.parquet, one row per open line). "By fund"
+filters the rows to one fund; "By code" filters them to one code and then counts funds.
 
 How this page plugs in
 ----------------------
-Streamlit treats any .py file inside a folder named `pages/` (next to the main
-script) as an extra page and adds it to the sidebar navigation automatically.
-Nothing in ucoa_reference.py has to change. The number prefix (1_) sets the
-order; underscores become spaces in the menu.
+Streamlit treats any .py file inside a folder named `pages/` (next to the main script) as an
+extra page. Each page is its own script, run top to bottom on every interaction.
 
-Each page is its own script, run top to bottom on every interaction, so this
-file loads its own data and sets its own page config.
+Links into this page
+--------------------
+Other pages can open this one already pointed at something, using the address bar:
+    ...?view=code&dim=object&code=58215      (the Code lookup cards do this)
+    ...?view=fund&fund=27579
+st.query_params reads those values. They only set the starting choice; after that the
+widgets are in charge.
 
 Data it reads (all built by the two build scripts — never hand-edited)
 ---------------------------------------------------------------------
@@ -34,7 +41,7 @@ from ui_common import setup_page
 
 # setup_page does the things every page shares: tab title, brand CSS, logo,
 # the page menu and the heading. See ui_common.py.
-setup_page("Lines open on a fund")
+setup_page("Open chart lines")
 
 # __file__ is this file; .parent is pages/; .parent.parent is the project folder.
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -94,12 +101,205 @@ st.caption(
     "PSAB Supplement 3 is the authoritative guidance on what each code means."
 )
 
+# ─── Which way to read the data ───────────────────────────────────────
+# A link from another page may arrive with ?view=...&dim=...&code=... in the address.
+# Copy those into st.session_state ONCE (keyed by the link itself), so they set the
+# starting choice without fighting the user's later clicks.
+qp = st.query_params
+link_id = "|".join(f"{k}={qp.get(k, '')}" for k in ("view", "dim", "code", "fund"))
+if qp and st.session_state.get("_link_seen") != link_id:
+    st.session_state["_link_seen"] = link_id
+    if qp.get("view") in ("code", "fund"):
+        st.session_state["view_mode"] = "By code" if qp.get("view") == "code" else "By fund"
+    if qp.get("dim") in ("function", "object", "program", "job_class"):
+        st.session_state["code_dim"] = qp.get("dim")
+        if qp.get("code"):
+            st.session_state[f"code_pick_{qp.get('dim')}"] = qp.get("code")
+    if qp.get("fund"):
+        st.session_state["fund_pick"] = qp.get("fund")
+
+# A widget with a key keeps its value in st.session_state under that key. setdefault gives
+# it a starting value only if a link (above) or an earlier click has not already set one.
+st.session_state.setdefault("view_mode", "By fund")
+st.session_state.setdefault("code_dim", "object")
+mode = st.segmented_control("View", ["By fund", "By code"], key="view_mode",
+                            label_visibility="collapsed") or "By fund"
+
+TOTAL_FUNDS = lines["fund"].nunique()
+DIM_LABEL = {"function": "Function", "object": "Object", "program": "Program", "job_class": "Job class"}
+
+
+def family_of(fund_code: str) -> str:
+    """Fund family = the fund's first two digits: 27579 -> 27000."""
+    return fund_code[:2] + "000"
+
+
+def family_label(fam: str) -> str:
+    name = name_of("fund", fam)
+    return f"{fam[:2]}xxx — {name}" if name else f"{fam[:2]}xxx"
+
+
+# ═════════════════════════════════════════════════════════════════════
+# BY CODE — where is this code open?
+# ═════════════════════════════════════════════════════════════════════
+if mode == "By code":
+    st.caption("Pick a code to see every fund it is open on. This is where a code *can* be "
+               "budgeted today — not where it has been.")
+
+    d1, d2 = st.columns([1, 3])
+    dim = d1.selectbox("Dimension", list(DIM_LABEL), format_func=DIM_LABEL.get, key="code_dim")
+
+    # How many funds each code of this dimension is open on. groupby + nunique = "for each
+    # code, count the distinct funds". observed=True skips category values with no rows.
+    @st.cache_data(ttl=3600, show_spinner=False)
+    def fund_counts(d: str) -> pd.Series:
+        return lines.groupby(d, observed=True)["fund"].nunique()
+
+    counts = fund_counts(dim)
+    table = look[dim]
+    in_obms = [c for c in table.index if table.at[c, "Availability"] != "Books only"] \
+        if "Availability" in table.columns else list(table.index)
+    code_options = sorted(set(in_obms) | set(counts.index.astype(str)))
+    pick_key = f"code_pick_{dim}"
+    if st.session_state.get(pick_key) not in code_options:
+        st.session_state.pop(pick_key, None)          # a code from a stale link: ignore it
+    code = d2.selectbox(
+        "Code", code_options, index=None, key=pick_key,
+        placeholder="Type a code or name…",
+        format_func=lambda c: f"{c} — {name_of(dim, c)}  ·  {int(counts.get(c, 0))} funds",
+    )
+    if code is None:
+        st.info("Choose a code to see which funds it is open on.")
+        st.stop()
+
+    cl = lines[lines[dim] == code].astype(str)        # every open line that uses this code
+    open_funds = sorted(cl["fund"].unique())
+    st.subheader(f"{DIM_LABEL[dim]} {code} — {name_of(dim, code)}")
+
+    if not open_funds:
+        st.warning(f"{DIM_LABEL[dim]} {code} is not open on any fund. It exists in the chart of "
+                   "accounts, but no chart line uses it.")
+        desc = psab_of(dim, code)
+        if desc:
+            with st.expander("PSAB description"):
+                st.write(desc)
+        st.stop()
+
+    others = [d for d in DIM_LABEL if d != dim]
+    main_other = "function" if dim != "function" else "object"
+    top = cl.groupby(main_other)["fund"].nunique().sort_values(ascending=False)
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Open on", f"{len(open_funds)} of {TOTAL_FUNDS} funds")
+    m2.metric("Chart lines", f"{len(cl):,}")
+    m3.metric(f"Most common {DIM_LABEL[main_other].lower()}",
+              f"{top.index[0]} · {int(top.iloc[0])} funds",
+              help=name_of(main_other, top.index[0]))
+
+    desc = psab_of(dim, code)
+    if desc:
+        with st.expander("PSAB description"):
+            st.write(desc)
+
+    # ── By fund family ────────────────────────────────────────────────
+    all_fams = pd.Series(sorted(summary.index)).map(family_of).value_counts()
+    open_fams = pd.Series(open_funds).map(family_of).value_counts()
+    fam_table = pd.DataFrame({"Open on": open_fams, "Funds in family": all_fams}).dropna()
+    fam_table["Open on"] = fam_table["Open on"].astype(int)
+    fam_table["Share"] = fam_table["Open on"] / fam_table["Funds in family"]
+    fam_table.insert(0, "Fund family", [family_label(f) for f in fam_table.index])
+
+    left, right = st.columns(2)
+    with left:
+        st.markdown("#### By fund family")
+        st.dataframe(
+            fam_table.sort_index(), hide_index=True, width="stretch",
+            column_config={"Share": st.column_config.ProgressColumn(
+                "Share of family", format="percent", min_value=0, max_value=1)},
+        )
+    with right:
+        st.markdown("#### What it is paired with")
+        tabs = st.tabs([DIM_LABEL[d] for d in others])
+        for tab, d in zip(tabs, others):
+            pair = cl.groupby(d)["fund"].nunique().sort_values(ascending=False).reset_index()
+            pair.columns = ["Code", "Funds"]
+            pair.insert(1, "Name", pair["Code"].map(lambda c, d=d: name_of(d, c)))
+            tab.dataframe(pair, hide_index=True, width="stretch", height=248)
+
+    # ── The funds ─────────────────────────────────────────────────────
+    st.markdown("#### Funds")
+    g1, g2, g3 = st.columns([1.4, 2, 2])
+    show = g1.segmented_control("Show", ["Open on", "Not open on"], default="Open on",
+                                key="code_show") or "Open on"
+    fam_choices = sorted(all_fams.index)
+    sel_fams = g2.multiselect("Fund family", fam_choices, format_func=family_label,
+                              placeholder="All families", key="code_fams")
+    fq = g3.text_input("Search funds", placeholder="Fund number or word", key="code_fund_q")
+
+    if show == "Open on":
+        # One row per fund: the other three dimensions it is paired with on that fund.
+        fund_table = cl.groupby("fund").agg(
+            **{d: (d, lambda s: ", ".join(sorted(set(s) - {"0000"}) or ["0000"])) for d in others},
+            lines=("fund", "size"),
+        ).reset_index()
+    else:
+        fund_table = pd.DataFrame({"fund": [f for f in sorted(summary.index) if f not in set(open_funds)]})
+    fund_table.insert(1, "fund_name", fund_table["fund"].map(lambda c: summary.at[c, "fund_name"]))
+    fund_table["width"] = fund_table["fund"].map(lambda c: summary.at[c, "width"].title())
+
+    if sel_fams:
+        fund_table = fund_table[fund_table["fund"].map(family_of).isin(sel_fams)]
+    if fq.strip():
+        hay = fund_table.astype(str).agg(" ".join, axis=1).str.lower()
+        for word in fq.lower().split():
+            keep = hay.str.contains(word, regex=False)
+            fund_table, hay = fund_table[keep], hay[keep]
+    fund_table = fund_table.reset_index(drop=True)
+
+    verb = "open on" if show == "Open on" else "not open on"
+    st.caption(f"{DIM_LABEL[dim]} {code} is {verb} {len(fund_table):,} fund(s) in this list."
+               + (" Click a row to see its lines on that fund." if show == "Open on" else ""))
+    labels = {"fund": st.column_config.TextColumn("Fund", width="small"), "fund_name": "Fund name",
+              "function": st.column_config.TextColumn("Functions", width="medium"),
+              "object": st.column_config.TextColumn("Objects", width="medium"), "program": "Programs",
+              "job_class": "Job classes", "lines": st.column_config.NumberColumn("Lines", width="small"),
+              "width": st.column_config.TextColumn("Fund width", width="small")}
+    if show == "Open on":
+        ev = st.dataframe(fund_table, hide_index=True, width="stretch", column_config=labels,
+                          on_select="rerun", selection_mode="single-row", key="code_fund_table")
+        if ev.selection.rows and len(fund_table):
+            f = fund_table.iloc[ev.selection.rows[0]]["fund"]
+            st.markdown(f"**{f} — {summary.at[f, 'fund_name']}** · lines using {DIM_LABEL[dim].lower()} {code}")
+            det = cl[cl["fund"] == f][["function", "object", "program", "job_class"]].sort_values(
+                ["function", "object", "program", "job_class"])
+            for d in ("function", "object"):
+                det.insert(det.columns.get_loc(d) + 1, f"{d}_name", det[d].map(lambda c, d=d: name_of(d, c)))
+            st.dataframe(det, hide_index=True, width="stretch")
+            st.page_link("pages/1_Lines_on_my_fund.py", label=f"See every line open on {f}",
+                         icon=":material/list_alt:", query_params={"view": "fund", "fund": f})
+    else:
+        st.dataframe(fund_table, hide_index=True, width="stretch", column_config=labels)
+
+    full = cl[["fund", "function", "object", "program", "job_class"]].copy()
+    full.insert(1, "fund_name", full["fund"].map(lambda c: summary.at[c, "fund_name"]))
+    st.download_button(
+        f"Download every line using {code} ({len(full):,} rows, CSV)",
+        full.to_csv(index=False).encode("utf-8-sig"),
+        file_name=f"chart_lines_{dim}_{code}.csv", mime="text/csv",
+    )
+    st.stop()
+
+# ═════════════════════════════════════════════════════════════════════
+# BY FUND — what is open on this fund?
+# ═════════════════════════════════════════════════════════════════════
 # ─── Pick a fund ──────────────────────────────────────────────────────
 fund_codes = sorted(summary.index)
+if st.session_state.get("fund_pick") not in fund_codes:
+    st.session_state.pop("fund_pick", None)           # a fund from a stale link: ignore it
 fund = st.selectbox(
     "Fund",
     fund_codes,
     index=None,
+    key="fund_pick",
     placeholder="Type a fund number or name…",
     # format_func changes only what is displayed; the value stays the code.
     format_func=lambda c: f"{c} — {summary.at[c, 'fund_name']}",
