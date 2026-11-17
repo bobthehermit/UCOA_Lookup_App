@@ -74,9 +74,10 @@ rules:
     then: { function: ["3100"] }
     basis: PSAB Supp. 3, object 56116
     alternative: >-
-      Food goes to 3100.56116 — don't move it to 56118 General Supplies to reach another
+      Food (for the purpose of an approved program) goes to 3100.56116 — don't move it 
+      to 56118 General Supplies to reach another
       function. Food that is part of a professional development activity can be paid
-      under 53330 with the PD (53330 covers PD-related expenses, including travel).
+      under 53330 with the PD (53330 covers PD-related expenses, including travel). Be mindful of the grant's rules on food and refreshments.
     example: Family night refreshments → 3100.56116
     note: Lorenzo, 10/21/26 BHI review and 11/12/26. Whether the grant allows food is the program manager's call.
     status: settled
