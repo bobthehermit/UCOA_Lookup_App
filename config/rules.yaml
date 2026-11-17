@@ -204,10 +204,18 @@ rules:
     status: settled
 
   - id: R018
-    title: Staff wellness from a non-licensed provider — individual services → 2500.55915; a structured program staff attend → 2200.53330
+    title: Staff wellness — a session staff attend → 53330 with the staff function; individual services from a non-licensed provider → 2500.55915
     kind: guidance
-    when: { object: "55915", function: ["2200", "2500"] }
-    basis: PSAB Supp. 3, function 2500 (employee health services)
+    when: { object: ["55915", "53215", "53414"], function: ["2200", "2300", "2400", "2500"] }
+    basis: PSAB Supp. 3, object 53330 (all PD expenditures "regardless of the type or intent"), object 55915 ("Use 53330 for any expenditures that apply to professional development"), function 2500 (staff health services)
+    alternative: >-
+      Group wellness sessions for staff led by a contracted provider, licensed or not, go to
+      53330 with the function for the staff attending: instructional 2200, district
+      administration 2300, school administration 2400. 53215 is for student and community
+      services (2100, 3300), not staff.
+    example: Staff sound bath led by a contracted licensed clinical social worker → 2200.53330
+    ask: Is this a session staff attend, or individual services to employees? Who attends, and is the provider licensed?
+    note: Widened 11/17/26 after the Carlsbad sound bath (BHI). Previously covered non-licensed providers only.
     status: settled
 
   - id: R019
