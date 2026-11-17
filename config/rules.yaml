@@ -299,4 +299,37 @@ rules:
       that hold cash). Open questions: deactivate in existing 24xxx/27xxx funds or just
       stop cloning it; check FY27 budget first. Heads-up to Sara pending — move to
       settled once she agrees. 26xxx/28xxx not covered yet (some hold cash).
+    status: retired
+
+      - id: R026
+    title: 58215 Restricted Expenditures is used only in operational funds (11000, 15100, 15200)
+    kind: require
+    when: { object: "58215" }
+    then: { fund: ["11000", "15100", "15200"] }
+    basis: >-
+      PSAB Supp. 3, object 58215 — budget earmarked or set aside for unassigned cash
+      balance. GASB 54 ¶17: the general fund is the only fund that reports a positive
+      unassigned fund balance; special revenue funds rest on restricted or committed
+      resources. 6.20.2.13(D) NMAC: school districts budget on a cash basis.
+    alternative: >-
+      In a grant or special revenue fund, budget the award on the expenditure lines
+      the LEA intends to use — the expenditure line is the earmark. For multi-year
+      appropriations, PED awards by fiscal year; remaining balances come with a new
+      award and go in the next year's operating budget (or a BAR if not ready in time).
+    example: >-
+      Taos BHI (27579) asked for 58215 to hold an FY28 share in FY27 → not opened.
+      The FY27 award ($530,000, fully expended by 6/30/27) was already budgeted in
+      full on 2100/2200 lines.
+    note: >-
+      Lorenzo, 11/17/26. Replaces R025 (24xxx/27xxx only). Evidence: Nov 16 export —
+      58215 open on 63 of 468 funds, incl. 45 of 141 27xxx (likely cloned setups); FY26
+      Q4 budget dollars on 58215 only in 11000, 15100, 60000 (Mosaic 27528 at $0).
+      Appropriations HB2 2025 item 265 / 2026 item 196 are FY26–FY28, but PED's FY27
+      award memo is FY27-only. Open questions for Sara/Vince: (1) enterprise fund
+      60000 (APS budgets $463K) — proprietary funds report net position, not fund
+      balance; allow or exclude? (2) deactivate 58215 in existing grant funds or stop
+      cloning it in; check FY27 budget first. (3) confirm 15100/15200 are general-fund
+      family for GASB 54 purposes. Reiner (author of Supp. 3) raised the spend-lock
+      argument (function-level ceilings, 6.20.2.9(A) NMAC) — verify cite, discuss.
     status: proposed
+
