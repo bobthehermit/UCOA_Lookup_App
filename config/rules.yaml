@@ -264,5 +264,30 @@ rules:
     basis: SBB practice — the program manager supplies the award facts; the School Budget Bureau decides
     alternative: If the award is appropriated by fiscal year, each year's budget stands on its own and 58215 is not opened
     ask: Is this a multi-year award, and is it appropriated by fiscal year or as one amount for the whole award period? Attach the award.
-    note: Lorenzo, 11/12/26 (Taos request on 27579).
-    status: settled
+    note: Lorenzo, 11/12/26 (Taos request on 27579). Superseded 11/16/26 by R025 — the multi-year test was the wrong question for reimbursement funds.
+    status: retired
+
+  - id: R025
+    title: 58215 Restricted Expenditures is not opened in reimbursement-based flow-through funds (24xxx, 27xxx)
+    kind: forbid
+    when: { object: "58215", fund: ["24*", "27*"] }
+    basis: >-
+      PSAB Supp. 3, object 58215 — budget earmarked or set aside for unassigned cash
+      balance. Reimbursement funds hold no cash: the LEA pays from 11000 and is
+      reimbursed through RfRs, so there is no cash to set aside.
+    alternative: >-
+      A grant budget is a spending plan — budget on the lines the LEA intends to use.
+      For a multi-year award, budget the current year's portion (or the full award if
+      it has no year-to-year restriction); remaining authority goes into the next
+      year's operating budget, or a BAR if it isn't ready in time. Show next-year
+      money in the award letter and program tracking, not a chart line.
+    example: Taos BHI (27579) asked for 58215 to hold the FY28 share in FY27 → not opened; FY28 share goes in the FY28 OpBud.
+    note: >-
+      Lorenzo, 11/16/26 (Taos/Reiner, 27579). Evidence: Nov 16 export has 58215 open on
+      63 of 468 funds, incl. 45 of 141 27xxx and 5 24xxx — likely carried in by cloned
+      fund setups (2900 pairing on 58 funds). FY26 Q4 budget: only grant-fund use was
+      Mosaic 27528 at $0; all real 58215 dollars were in 11000, 15100, 60000 (funds
+      that hold cash). Open questions: deactivate in existing 24xxx/27xxx funds or just
+      stop cloning it; check FY27 budget first. Heads-up to Sara pending — move to
+      settled once she agrees. 26xxx/28xxx not covered yet (some hold cash).
+    status: proposed
