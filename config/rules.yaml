@@ -301,7 +301,7 @@ rules:
       settled once she agrees. 26xxx/28xxx not covered yet (some hold cash).
     status: retired
 
-      - id: R026
+  - id: R026
     title: 58215 Restricted Expenditures is used only in operational funds (11000, 15100, 15200)
     kind: require
     when: { object: "58215" }
